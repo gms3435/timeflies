@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TimeFlies | Gestão Inteligente de Tempo e Tarefas</title>
+
+    <!-- PWA: Manifest e ícone -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a0f00">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TimeFlies">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <!-- SEO -->
+    <meta name="description" content="TimeFlies - Organize sua rotina, bloqueie horários e gerencie tarefas com prazos. O Tempo Voa!">
+
+    <!-- Google Fonts: preconnect primeiro para velocidade máxima -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Carrega apenas os pesos realmente usados (300,500,600,700) -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- CSS do App -->
+    <link rel="stylesheet" href="style.css?v=6">
+
+    <!-- Diagnóstico de Erros JS (inline, sem custo de rede) -->
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ef4444;color:#fff;padding:14px;z-index:99999;font-family:monospace;font-size:13px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+            errorDiv.innerHTML = '<strong>Erro:</strong> ' + message + ' <br><small>Arquivo: ' + (source ? source.split('/').pop() : '?') + ' | Linha: ' + lineno + '</small>';
+            document.body.appendChild(errorDiv);
+            return false;
+        };
+    </script>
+    <!-- Lucide Icons: carregado no head (necessário de forma síncrona para os ícones) -->
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="header-logo">
+                <div class="logo-icon">
+                    <i data-lucide="clock-4"></i>
+                </div>
+                <div>
+                    <h1>TimeFlies</h1>
+                    <p class="subtitle">O Tempo Voa (Organize sua rotina)</p>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+                <div class="stat-card">
+                    <span class="stat-label">Comprometido</span>
+                    <span class="stat-value" id="stats-committed-hours">0.0h</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Livre Hoje</span>
+                    <span class="stat-value text-success" id="stats-free-hours">24.0h</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Tarefas</span>
+                    <span class="stat-value" id="stats-tasks-completed">0/0</span>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <button id="btn-reset-data" class="btn-icon" title="Limpar e Reiniciar Dados" style="color: var(--danger); border-color: rgba(220, 38, 38, 0.2);">
+                    <i data-lucide="trash-2"></i>
+                </button>
+                <button id="theme-toggle" class="btn-icon" title="Alternar tema">
+                    <i data-lucide="sun" class="sun-icon"></i>
+                    <i data-lucide="moon" class="moon-icon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- NAVEGAÇÃO POR ABAS -->
+        <nav class="app-tabs-nav">
+            <div class="tabs-list-buttons">
+                <button class="app-tab-link active" onclick="switchMainTab('tab-agenda')">
+                    <i data-lucide="calendar"></i> Agenda Diária
+                </button>
+                <button class="app-tab-link" onclick="switchMainTab('tab-tarefas')">
+                    <i data-lucide="check-square"></i> Minhas Tarefas
+                </button>
+                <button class="app-tab-link" onclick="switchMainTab('tab-metrics')">
+                    <i data-lucide="sparkles"></i> Métricas & Smart Fit
+                </button>
+            </div>
+            <div class="quick-actions">
+                <button class="btn-primary btn-trigger-add-task btn-sm">
+                    <i data-lucide="plus"></i> Nova Tarefa
+                </button>
+                <button class="btn-secondary btn-trigger-add-block btn-sm">
+                    <i data-lucide="calendar-plus"></i> Bloquear Horário
+                </button>
+            </div>
+        </nav>
+
+        <!-- MAIN LAYOUT -->
+        <main class="app-main">
+            <!-- ABA 1: Agenda Diária -->
+            <div id="tab-agenda" class="tab-content active">
+                <section class="agenda-column">
+                    <div class="glass-panel agenda-panel">
+                        <div class="panel-header space-between">
+                            <div class="title-with-icon">
+                                <i data-lucide="calendar" class="text-secondary"></i>
+                                <h2>Agenda Diária (Horários)</h2>
+                            </div>
+                            <button class="btn-primary btn-trigger-add-block">
+                                <i data-lucide="plus"></i> Bloquear Horário
+                            </button>
+                        </div>
+                        
+                        <!-- Seletor de Dia da Semana -->
+                        <div class="day-selector-bar" id="agenda-day-selector">
+                            <button class="day-chip" data-day="seg">Seg</button>
+                            <button class="day-chip" data-day="ter">Ter</button>
+                            <button class="day-chip" data-day="qua">Qua</button>
+                            <button class="day-chip" data-day="qui">Qui</button>
+                            <button class="day-chip" data-day="sex">Sex</button>
+                            <button class="day-chip" data-day="sab">Sáb</button>
+                            <button class="day-chip" data-day="dom">Dom</button>
+                        </div>
+
+                        <div class="agenda-scroll-container">
+                            <div class="agenda-timeline" id="daily-timeline">
+                                <!-- Inserido dinamicamente via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- ABA 2: Minhas Tarefas -->
+            <div id="tab-tarefas" class="tab-content">
+                <section class="tasks-column">
+                    <div class="glass-panel tasks-panel">
+                        <div class="panel-header flex-column">
+                            <div class="space-between width-full">
+                                <div class="title-with-icon">
+                                    <i data-lucide="check-square" class="text-success"></i>
+                                    <h2>Suas Tarefas</h2>
+                                </div>
+                                <div class="flex-end" style="gap: 8px;">
+                                    <button class="btn-secondary" id="btn-export-whatsapp" style="padding: 10px 16px;">
+                                        <i data-lucide="share-2"></i> WhatsApp
+                                    </button>
+                                    <button class="btn-primary btn-trigger-add-task">
+                                        <i data-lucide="plus"></i> Nova Tarefa
+                                    </button>
+                                </div>
+                            <!-- Categoria Filtros -->
+                            <div class="category-tabs">
+                                <button class="tab-btn active" data-category="all">Todas</button>
+                                <button class="tab-btn" data-category="casa" data-color="casa">
+                                    <span class="dot dot-casa"></span>Casa
+                                </button>
+                                <button class="tab-btn" data-category="trabalho" data-color="trabalho">
+                                    <span class="dot dot-trabalho"></span>Trabalho
+                                </button>
+                                <button class="tab-btn" data-category="faculdade" data-color="faculdade">
+                                    <span class="dot dot-faculdade"></span>Faculdade
+                                </button>
+                            </div>
+
+                            <!-- Filtro por Dia da Semana -->
+                            <div class="day-filter-tabs" id="task-day-filter-bar">
+                                <button class="day-filter-btn active" data-day="all">Todos os Dias</button>
+                                <button class="day-filter-btn" data-day="seg">Seg</button>
+                                <button class="day-filter-btn" data-day="ter">Ter</button>
+                                <button class="day-filter-btn" data-day="qua">Qua</button>
+                                <button class="day-filter-btn" data-day="qui">Qui</button>
+                                <button class="day-filter-btn" data-day="sex">Sex</button>
+                                <button class="day-filter-btn" data-day="sab">Sáb</button>
+                                <button class="day-filter-btn" data-day="dom">Dom</button>
+                                <button class="day-filter-btn" data-day="none">Não Agendados</button>
+                            </div>
+                        </div>
+                        
+                        <div class="tasks-scroll-container">
+                            <div class="tasks-list" id="tasks-list-container">
+                                <!-- Inserido dinamicamente via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- ABA 3: Métricas & Smart Fit -->
+            <div id="tab-metrics" class="tab-content">
+                <section class="sidebar-column">
+                    <!-- Gráfico de Alocação de Tempo -->
+                    <div class="glass-panel metrics-panel">
+                        <div class="panel-header">
+                            <i data-lucide="pie-chart" class="text-primary"></i>
+                            <h2>Alocação de Tempo</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="timeAllocationChart"></canvas>
+                        </div>
+                        <div id="chart-legend" class="chart-legend"></div>
+                    </div>
+    
+                    <!-- Smart Scheduling Assistant -->
+                    <div class="glass-panel assistant-panel">
+                        <div class="panel-header">
+                            <i data-lucide="sparkles" class="text-accent"></i>
+                            <h2>Assistente Smart Fit</h2>
+                        </div>
+                        <p class="panel-desc">Selecione uma tarefa para encontrar janelas livres no seu dia para realizá-la:</p>
+                        <div class="assistant-content">
+                            <div class="select-task-wrapper">
+                                <select id="assistant-task-select" class="form-control">
+                                    <option value="">Selecione uma tarefa pendente...</option>
+                                </select>
+                            </div>
+                            <div id="assistant-suggestions" class="suggestions-list">
+                                <div class="placeholder-msg">
+                                    <i data-lucide="info"></i>
+                                    Selecione uma tarefa acima para ver sugestões de encaixe.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: Adicionar/Editar Bloqueio de Horário -->
+    <div id="modal-block" class="modal-overlay">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3 id="block-modal-title">Bloquear Horário Ocupado</h3>
+                <button type="button" class="btn-close-modal"><i data-lucide="x"></i></button>
+            </div>
+            <form id="block-form">
+                <input type="hidden" id="block-id">
+                <div class="form-group">
+                    <label for="block-title">Título do Compromisso / Bloqueio</label>
+                    <input type="text" id="block-title" class="form-control" placeholder="Ex: Aula de Cálculo, Reunião Semanal, Sono" required>
+                </div>
+                <div class="form-group">
+                    <label>Dias da Semana</label>
+                    <div class="day-checkbox-group">
+                        <label class="checkbox-chip"><input type="checkbox" name="block-days" value="seg">Seg</label>
+                        <label class="checkbox-chip"><input type="checkbox" name="block-days" value="ter">Ter</label>
+                        <label class="checkbox-chip"><input type="checkbox" name="block-days" value="qua">Qua</label>
+                        <label class="checkbox-chip"><input type="checkbox" name="block-days" value="qui">Qui</label>
+                        <label class="checkbox-chip"><input type="checkbox" name="block-days" value="sex">Sex</label>
+                        <label class="checkbox-chip"><input type="checkbox" name="block-days" value="sab">Sáb</label>
+                        <label class="checkbox-chip"><input type="checkbox" name="block-days" value="dom">Dom</label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="block-start">Hora de Início</label>
+                        <input type="time" id="block-start" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="block-end">Hora de Término</label>
+                        <input type="time" id="block-end" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Compromisso (Cor)</label>
+                    <div class="color-options">
+                        <label class="color-radio option-busy">
+                            <input type="radio" name="block-color" value="busy" checked>
+                            <span class="color-preview preview-busy"></span> Comprometido
+                        </label>
+                        <label class="color-radio option-faculdade-block">
+                            <input type="radio" name="block-color" value="faculdade">
+                            <span class="color-preview preview-faculdade"></span> Faculdade
+                        </label>
+                        <label class="color-radio option-trabalho-block">
+                            <input type="radio" name="block-color" value="trabalho">
+                            <span class="color-preview preview-trabalho"></span> Trabalho
+                        </label>
+                        <label class="color-radio option-casa-block">
+                            <input type="radio" name="block-color" value="casa">
+                            <span class="color-preview preview-casa"></span> Casa
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="btn-delete-block" class="btn-danger hidden">Excluir Bloqueio</button>
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary btn-close-modal">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Adicionar/Editar Tarefa -->
+    <div id="modal-task" class="modal-overlay">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3 id="task-modal-title">Nova Tarefa</h3>
+                <button type="button" class="btn-close-modal"><i data-lucide="x"></i></button>
+            </div>
+            <form id="task-form">
+                <input type="hidden" id="task-id">
+                <div class="form-group">
+                    <label for="task-title">Título da Tarefa</label>
+                    <input type="text" id="task-title" class="form-control" placeholder="Ex: Resolver lista de exercícios, Preparar relatório" required>
+                </div>
+                <div class="form-group">
+                    <label for="task-desc">Descrição (Opcional)</label>
+                    <textarea id="task-desc" class="form-control" rows="2" placeholder="Detalhes da tarefa..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="task-category">Categoria</label>
+                        <select id="task-category" class="form-control" required>
+                            <option value="casa">Casa</option>
+                            <option value="trabalho">Trabalho</option>
+                            <option value="faculdade">Faculdade</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-priority">Prioridade</label>
+                        <select id="task-priority" class="form-control" required>
+                            <option value="low">Baixa</option>
+                            <option value="medium" selected>Média</option>
+                            <option value="high">Alta</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="task-duration">Duração Estimada</label>
+                        <select id="task-duration" class="form-control" required>
+                            <option value="15">15 minutos</option>
+                            <option value="30">30 minutos</option>
+                            <option value="45">45 minutos</option>
+                            <option value="60" selected>1 hora</option>
+                            <option value="90">1h 30min</option>
+                            <option value="120">2 horas</option>
+                            <option value="180">3 horas</option>
+                            <option value="240">4 horas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="task-deadline">Data Limite</label>
+                        <input type="date" id="task-deadline" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-deadline-time">Horário Limite</label>
+                        <input type="time" id="task-deadline-time" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="task-day">Agendar para o dia (Opcional)</label>
+                    <select id="task-day" class="form-control">
+                        <option value="">Não agendado (Lista Geral)</option>
+                        <option value="seg">Segunda-feira</option>
+                        <option value="ter">Terça-feira</option>
+                        <option value="qua">Quarta-feira</option>
+                        <option value="qui">Quinta-feira</option>
+                        <option value="sex">Sexta-feira</option>
+                        <option value="sab">Sábado</option>
+                        <option value="dom">Domingo</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="btn-delete-task" class="btn-danger hidden">Excluir Tarefa</button>
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary btn-close-modal">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Chart.js: versão pinada + bundle minificado -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
+    <!-- App -->
+    <script src="app.js?v=6" defer></script>
+    <!-- Service Worker: cache offline -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>

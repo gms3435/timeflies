@@ -1,0 +1,42 @@
+{
+  "name": "TimeFlies — O Tempo Voa",
+  "short_name": "TimeFlies",
+  "description": "Organize sua rotina, bloqueie horários e gerencie tarefas com prazos.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f0700",
+  "theme_color": "#1a0f00",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Nova Tarefa",
+      "short_name": "Tarefa",
+      "description": "Adicionar uma nova tarefa",
+      "url": "./index.html#nova-tarefa",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Bloquear Horário",
+      "short_name": "Bloquear",
+      "description": "Bloquear um horário na agenda",
+      "url": "./index.html#nova-agenda",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
