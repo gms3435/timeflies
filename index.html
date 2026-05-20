@@ -238,6 +238,7 @@
     <!-- MODAL: Adicionar/Editar Bloqueio de Horário -->
     <div id="modal-block" class="modal-overlay">
         <div class="modal-content glass-card">
+            <div class="bottom-sheet-grabber"></div>
             <div class="modal-header">
                 <h3 id="block-modal-title">Bloquear Horário Ocupado</h3>
                 <button type="button" class="btn-close-modal"><i data-lucide="x"></i></button>
@@ -305,6 +306,7 @@
     <!-- MODAL: Adicionar/Editar Tarefa -->
     <div id="modal-task" class="modal-overlay">
         <div class="modal-content glass-card">
+            <div class="bottom-sheet-grabber"></div>
             <div class="modal-header">
                 <h3 id="task-modal-title">Nova Tarefa</h3>
                 <button type="button" class="btn-close-modal"><i data-lucide="x"></i></button>
@@ -384,6 +386,39 @@
                 </div>
             </form>
         </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION (Visível apenas no mobile) -->
+    <nav class="bottom-nav">
+        <button class="bottom-nav-link active" id="btn-nav-agenda" onclick="switchMainTab('tab-agenda')">
+            <i data-lucide="calendar"></i>
+            <span>Agenda</span>
+        </button>
+        <button class="bottom-nav-link" id="btn-nav-tarefas" onclick="switchMainTab('tab-tarefas')">
+            <i data-lucide="check-square"></i>
+            <span>Tarefas</span>
+        </button>
+        <button class="bottom-nav-link" id="btn-nav-metrics" onclick="switchMainTab('tab-metrics')">
+            <i data-lucide="sparkles"></i>
+            <span>Smart Fit</span>
+        </button>
+    </nav>
+
+    <!-- FAB (Floating Action Button) - Visível apenas no mobile -->
+    <div class="fab-container" id="fab-container">
+        <div class="fab-options" id="fab-options">
+            <button class="fab-option-btn btn-trigger-add-task" title="Nova Tarefa">
+                <i data-lucide="check-square"></i>
+                <span class="fab-label">Nova Tarefa</span>
+            </button>
+            <button class="fab-option-btn btn-trigger-add-block" title="Bloquear Horário">
+                <i data-lucide="calendar-plus"></i>
+                <span class="fab-label">Bloquear Horário</span>
+            </button>
+        </div>
+        <button class="fab-main-btn" id="fab-main-btn">
+            <i data-lucide="plus" class="fab-icon-plus"></i>
+        </button>
     </div>
 
     <!-- Chart.js: versão pinada + bundle minificado -->

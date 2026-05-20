@@ -278,6 +278,31 @@ function initAppEvents() {
     if (elements.btnExportWhatsApp) {
         elements.btnExportWhatsApp.addEventListener('click', exportToWhatsApp);
     }
+
+    // FAB Toggle (mobile)
+    const fabMainBtn = document.getElementById('fab-main-btn');
+    const fabOptions = document.getElementById('fab-options');
+    if (fabMainBtn && fabOptions) {
+        fabMainBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fabMainBtn.classList.toggle('active');
+            fabOptions.classList.toggle('show');
+        });
+        
+        // Clicar em qualquer opção fecha o FAB
+        document.querySelectorAll('.fab-option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                fabMainBtn.classList.remove('active');
+                fabOptions.classList.remove('show');
+            });
+        });
+        
+        // Clicar fora fecha o FAB
+        window.addEventListener('click', () => {
+            fabMainBtn.classList.remove('active');
+            fabOptions.classList.remove('show');
+        });
+    }
 }
 
 // TIME HELPERS
@@ -1062,6 +1087,11 @@ window.switchMainTab = function(tabId) {
         link.classList.remove('active');
     });
     
+    // Deactivate all bottom nav links (mobile)
+    document.querySelectorAll('.bottom-nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
     // Activate target tab content
     const targetTab = document.getElementById(tabId);
     if (targetTab) {
@@ -1073,6 +1103,15 @@ window.switchMainTab = function(tabId) {
     if (targetLink) {
         targetLink.classList.add('active');
     }
+    
+    // Activate target bottom nav link (mobile)
+    const targetBottomLink = document.querySelector(`.bottom-nav-link[onclick*="${tabId}"]`);
+    if (targetBottomLink) {
+        targetBottomLink.classList.add('active');
+    }
+    
+    // Scroll page to top on mobile for transition smoothness
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     
     // Special trigger: re-render charts when switching to metrics tab
     if (tabId === 'tab-metrics') {
