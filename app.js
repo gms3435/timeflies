@@ -2050,21 +2050,21 @@ function renderFinances() {
     let totalCard = 0;
     
     const categoriesLabels = {
-        alimentacao: 'Alimentação / Mercado',
-        transporte: 'Transporte / Combustível',
-        moradia: 'Moradia (Aluguel, Contas)',
-        saude: 'Saúde / Farmácia',
-        educacao: 'Educação / Faculdade',
-        lazer: 'Lazer / Restaurantes',
-        vestuario: 'Vestuário / Roupas',
-        compras: 'Compras / Utilidades',
-        servicos: 'Serviços / Assinaturas',
-        pessoal: 'Cuidados Pessoais',
-        viagens: 'Viagens / Passeios',
-        presentes: 'Presentes / Doações',
-        petshop: 'Animais (Petshop)',
-        trabalho: 'Trabalho / Negócios',
-        outros: 'Outros / Diversos'
+        alimentacao: 'Alimentação',
+        bem_duravel: 'Bem durável',
+        filhos: 'Filhos',
+        ensino: 'Ensino',
+        gasto_terceiro: 'Gasto de Terceiro',
+        glp: 'GLP',
+        lazer: 'Lazer',
+        mercado: 'Mercado',
+        obra: 'Obra',
+        pet: 'Pet',
+        roupa: 'Roupa',
+        saude: 'Saúde',
+        servico: 'Serviço',
+        taxa: 'Taxa',
+        transporte: 'Transporte'
     };
     
     if (finances.length === 0) {

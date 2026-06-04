@@ -1337,6 +1337,17 @@ label {
     transition: var(--transition-fast);
     outline: none;
 }
+
+/* Garante contraste perfeito nas listas suspensas (select options) no celular e desktop */
+select.form-control option {
+    background-color: #1c110d;
+    color: #f5ece5;
+}
+[data-theme="light"] select.form-control option {
+    background-color: #ffffff;
+    color: #3f0000;
+}
+
 .form-control:focus {
     border-color: var(--primary);
     background: rgba(255, 255, 255, 0.08);
