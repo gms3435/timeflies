@@ -38,8 +38,33 @@
     </script>
     <!-- Lucide Icons: carregado no head (necessário de forma síncrona para os ícones) -->
     <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+    <!-- CryptoJS: para criptografia local segura -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
 </head>
 <body>
+    <!-- TELA DE BLOQUEIO (Exigida na inicialização se senha cadastrada) -->
+    <div id="lock-screen-overlay" class="lock-screen-overlay">
+        <div class="lock-card glass-card text-center" style="max-width: 360px; width: 90%; padding: 30px 24px; display: flex; flex-direction: column; align-items: center; gap: 20px; border-radius: var(--border-radius-lg); border: 1px solid var(--panel-border); box-shadow: 0 15px 35px var(--panel-shadow);">
+            <div class="logo-icon animate-bell" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(234, 88, 12, 0.25);">
+                <i data-lucide="lock" style="width: 28px; height: 28px; color: white;"></i>
+            </div>
+            <div class="lock-header">
+                <h2 id="lock-title" style="font-size: 1.3rem; font-weight: 800; background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">TimeFlies Seguro</h2>
+                <p id="lock-desc" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Insira sua senha de acesso local para entrar.</p>
+            </div>
+            <form id="lock-form-submit" onsubmit="handleLockSubmit(event)" style="width: 100%; display: flex; flex-direction: column; gap: 12px;">
+                <div class="form-group" style="text-align: left; width: 100%;">
+                    <input type="password" id="lock-password-input" class="form-control" placeholder="Digite sua senha..." required style="text-align: center; font-size: 1.1rem; letter-spacing: 2px;">
+                </div>
+                <div id="lock-error-msg" class="text-danger hidden" style="font-size: 0.75rem; text-align: center; margin-top: -4px;">Senha incorreta. Tente novamente.</div>
+                <button type="submit" class="btn-accent" style="width: 100%; justify-content: center; padding: 12px;">Acessar</button>
+            </form>
+            <div id="lock-reset-section" class="hidden" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; width: 100%;">
+                <button type="button" class="btn-danger btn-sm" onclick="resetAllAppData()" style="width: 100%; font-size: 0.75rem; background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 8px;">Esqueceu a senha? Resetar App</button>
+            </div>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- HEADER -->
         <header class="app-header">
@@ -73,6 +98,10 @@
                 <button id="btn-reset-data" class="btn-icon" title="Limpar e Reiniciar Dados" style="color: var(--danger); border-color: rgba(220, 38, 38, 0.2);">
                     <i data-lucide="trash-2"></i>
                 </button>
+                <button id="btn-toggle-alarms" class="btn-icon" title="Silenciar/Ativar Alarmes de Agenda">
+                    <i data-lucide="bell" class="bell-on-icon"></i>
+                    <i data-lucide="bell-off" class="bell-off-icon" style="display: none;"></i>
+                </button>
                 <button id="theme-toggle" class="btn-icon" title="Alternar tema">
                     <i data-lucide="sun" class="sun-icon"></i>
                     <i data-lucide="moon" class="moon-icon"></i>
@@ -88,6 +117,9 @@
                 </button>
                 <button class="app-tab-link" onclick="switchMainTab('tab-tarefas')">
                     <i data-lucide="check-square"></i> Minhas Tarefas
+                </button>
+                <button class="app-tab-link" onclick="switchMainTab('tab-finances')">
+                    <i data-lucide="wallet"></i> Minhas Finanças
                 </button>
                 <button class="app-tab-link" onclick="switchMainTab('tab-metrics')">
                     <i data-lucide="sparkles"></i> Métricas & Smart Fit
@@ -157,6 +189,18 @@
                                         <i data-lucide="plus"></i> Nova Tarefa
                                     </button>
                                 </div>
+                            </div>
+
+                            <!-- Alternar Visualização -->
+                            <div class="view-toggle-bar">
+                                <button class="view-toggle-btn active" id="btn-view-list" onclick="switchTaskView('list')">
+                                    <i data-lucide="list"></i> Lista
+                                </button>
+                                <button class="view-toggle-btn" id="btn-view-priorities" onclick="switchTaskView('priorities')">
+                                    <i data-lucide="grid-3x3"></i> Painel de Prioridades
+                                </button>
+                            </div>
+
                             <!-- Categoria Filtros -->
                             <div class="category-tabs">
                                 <button class="tab-btn active" data-category="all">Todas</button>
@@ -189,12 +233,77 @@
                             <div class="tasks-list" id="tasks-list-container">
                                 <!-- Inserido dinamicamente via JS -->
                             </div>
+                            <div class="tasks-priorities-grid hidden" id="tasks-priorities-container">
+                                <!-- Colunas por prioridade inseridas via JS -->
+                            </div>
                         </div>
                     </div>
                 </section>
             </div>
             
-            <!-- ABA 3: Métricas & Smart Fit -->
+            <!-- ABA 3: Minhas Finanças -->
+            <div id="tab-finances" class="tab-content">
+                <section class="tasks-column" style="height: 100%;">
+                    <div class="glass-panel tasks-panel">
+                        <div class="panel-header space-between">
+                            <div class="title-with-icon">
+                                <i data-lucide="wallet" class="text-accent"></i>
+                                <h2>Anotador Financeiro Rápido</h2>
+                            </div>
+                            <div class="flex-end" style="gap: 8px;">
+                                <button class="btn-danger" id="btn-clear-finances" onclick="clearAllExpenses()" style="padding: 10px 16px;">
+                                    <i data-lucide="trash-2"></i> Limpar Enviados
+                                </button>
+                                <button class="btn-primary" onclick="openExpenseModal()">
+                                    <i data-lucide="plus"></i> Novo Lançamento
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Resumo Financeiro Local -->
+                        <div class="quick-stats" style="margin-top: 8px; justify-content: flex-start; width: 100%; gap: 16px;">
+                            <div class="stat-card" style="flex: 1; min-width: 130px; align-items: flex-start; padding: 10px 16px;">
+                                <span class="stat-label">Total À Vista</span>
+                                <span class="stat-value text-success" id="finance-total-cash">R$ 0,00</span>
+                            </div>
+                            <div class="stat-card" style="flex: 1; min-width: 130px; align-items: flex-start; padding: 10px 16px;">
+                                <span class="stat-label">Total Cartão</span>
+                                <span class="stat-value" id="finance-total-card" style="color: var(--accent);">R$ 0,00</span>
+                            </div>
+                            <div class="stat-card" style="flex: 1; min-width: 130px; align-items: flex-start; padding: 10px 16px;">
+                                <span class="stat-label">Total Geral</span>
+                                <span class="stat-value" id="finance-total-all">R$ 0,00</span>
+                            </div>
+                        </div>
+
+                        <div class="tasks-scroll-container" style="margin-top: 8px; overflow-y: auto;">
+                            <div class="finance-list-wrapper" style="width: 100%;">
+                                <table class="finance-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <thead>
+                                        <tr style="border-bottom: 2px solid rgba(255,255,255,0.08); font-size: 0.8rem; color: var(--text-muted);">
+                                            <th style="padding: 10px;">Data</th>
+                                            <th style="padding: 10px;">Categoria</th>
+                                            <th style="padding: 10px;">Método</th>
+                                            <th style="padding: 10px; text-align: right;">Valor</th>
+                                            <th style="padding: 10px;">Observação</th>
+                                            <th style="padding: 10px; text-align: center; width: 50px;">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="finance-tbody">
+                                        <!-- Transações inseridas dinamicamente via JS -->
+                                    </tbody>
+                                </table>
+                                <div id="finance-empty-msg" class="placeholder-msg">
+                                    <i data-lucide="receipt"></i>
+                                    Nenhum gasto registrado. Use o botão acima para lançar!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- ABA 4: Métricas & Smart Fit -->
             <div id="tab-metrics" class="tab-content">
                 <section class="sidebar-column">
                     <!-- Gráfico de Alocação de Tempo -->
@@ -207,6 +316,18 @@
                             <canvas id="timeAllocationChart"></canvas>
                         </div>
                         <div id="chart-legend" class="chart-legend"></div>
+                    </div>
+
+                    <!-- Gráfico de Prioridades de Tarefas -->
+                    <div class="glass-panel metrics-panel">
+                        <div class="panel-header">
+                            <i data-lucide="bar-chart-horizontal" class="text-success"></i>
+                            <h2>Prioridades das Tarefas</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="taskPriorityChart"></canvas>
+                        </div>
+                        <div id="priority-chart-legend" class="chart-legend"></div>
                     </div>
     
                     <!-- Smart Scheduling Assistant -->
@@ -228,6 +349,67 @@
                                     Selecione uma tarefa acima para ver sugestões de encaixe.
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Timer de Execução -->
+                    <div class="glass-panel timer-panel">
+                        <div class="panel-header">
+                            <i data-lucide="timer" class="text-accent"></i>
+                            <h2>Timer de Execução</h2>
+                        </div>
+                        <p class="panel-desc">Escolha uma tarefa pendente e acompanhe seu tempo limite de execução:</p>
+                        <div class="timer-content">
+                            <div class="select-task-wrapper">
+                                <select id="timer-task-select" class="form-control">
+                                    <option value="">Selecione uma tarefa para executar...</option>
+                                </select>
+                            </div>
+                            
+                            <div class="timer-display-section">
+                                <div class="timer-digital-wrapper">
+                                    <div class="timer-digital" id="timer-display">25:00</div>
+                                    <div class="timer-running-label" id="timer-running-label">Pausado</div>
+                                </div>
+                                <div class="timer-progress-container">
+                                    <div class="timer-progress-track">
+                                        <div class="timer-progress-fill" id="timer-progress-fill" style="width: 100%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="timer-controls">
+                                <button class="btn-icon timer-btn-adjust" onclick="adjustTimer(-300)" title="Subtrair 5 minutos">-5m</button>
+                                <button class="btn-primary timer-btn-play" id="btn-timer-toggle" onclick="toggleTimer()">
+                                    <i data-lucide="play" id="timer-play-icon" style="width:16px; height:16px;"></i>
+                                </button>
+                                <button class="btn-icon timer-btn-reset" onclick="resetTimer()" title="Reiniciar Timer">
+                                    <i data-lucide="rotate-ccw" style="width:16px; height:16px;"></i>
+                                </button>
+                                <button class="btn-icon timer-btn-adjust" onclick="adjustTimer(300)" title="Somar 5 minutos">+5m</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configurações de Segurança e Backup -->
+                    <div class="glass-panel backup-panel">
+                        <div class="panel-header">
+                            <i data-lucide="shield-check" class="text-primary"></i>
+                            <h2>Segurança & Backup Local</h2>
+                        </div>
+                        <p class="panel-desc">Proteja seus dados contra perdas ou exporte para outro dispositivo:</p>
+                        <div class="backup-actions" style="display: flex; gap: 12px; margin-top: 4px;">
+                            <button class="btn-secondary" onclick="exportBackup()" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 10px 14px;">
+                                <i data-lucide="download" style="width:16px; height:16px;"></i> Exportar
+                            </button>
+                            <label class="btn-primary" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; cursor: pointer; margin: 0; padding: 10px 14px; font-size: 0.9rem; font-weight: 600; border-radius: var(--border-radius-md); box-shadow: none;">
+                                <i data-lucide="upload" style="width:16px; height:16px;"></i> Importar
+                                <input type="file" id="input-import-backup" accept=".json" onchange="importBackup(event)" style="display: none;">
+                            </label>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; margin-top: 4px;">
+                            <span>Criptografia de Acesso</span>
+                            <button class="btn-secondary btn-sm" onclick="changeAccessPassword()" style="padding: 4px 10px; font-size: 0.7rem;">Alterar Senha</button>
                         </div>
                     </div>
                 </section>
@@ -398,6 +580,10 @@
             <i data-lucide="check-square"></i>
             <span>Tarefas</span>
         </button>
+        <button class="bottom-nav-link" id="btn-nav-finances" onclick="switchMainTab('tab-finances')">
+            <i data-lucide="wallet"></i>
+            <span>Finanças</span>
+        </button>
         <button class="bottom-nav-link" id="btn-nav-metrics" onclick="switchMainTab('tab-metrics')">
             <i data-lucide="sparkles"></i>
             <span>Smart Fit</span>
@@ -419,6 +605,96 @@
         <button class="fab-main-btn" id="fab-main-btn">
             <i data-lucide="plus" class="fab-icon-plus"></i>
         </button>
+    </div>
+
+    <!-- MODAL: Adicionar Nova Despesa (Finanças) -->
+    <div id="modal-expense" class="modal-overlay">
+        <div class="modal-content glass-card">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3>Novo Lançamento Financeiro</h3>
+                <button type="button" class="btn-close-modal" onclick="closeExpenseModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="expense-form" onsubmit="saveExpense(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="expense-date">Data da Compra</label>
+                        <input type="date" id="expense-date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="expense-amount">Valor (R$)</label>
+                        <input type="number" id="expense-amount" class="form-control" placeholder="0,00" step="0.01" min="0.01" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Forma de Pagamento</label>
+                    <div class="payment-options" style="display: flex; gap: 12px; margin-top: 4px;">
+                        <label class="payment-radio" style="flex: 1; text-align: center; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--border-radius-md); padding: 12px; cursor: pointer; display: block; transition: var(--transition-fast);">
+                            <input type="radio" name="expense-method" value="cash" checked style="display: none;">
+                            <span class="payment-radio-label" style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted);">À Vista</span>
+                        </label>
+                        <label class="payment-radio" style="flex: 1; text-align: center; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--border-radius-md); padding: 12px; cursor: pointer; display: block; transition: var(--transition-fast);">
+                            <input type="radio" name="expense-method" value="card" style="display: none;">
+                            <span class="payment-radio-label" style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted);">Cartão de Crédito</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="expense-category">Categoria do Gasto</label>
+                    <select id="expense-category" class="form-control" required>
+                        <option value="alimentacao">Alimentação / Mercado</option>
+                        <option value="transporte">Transporte / Combustível</option>
+                        <option value="moradia">Moradia (Aluguel, Contas)</option>
+                        <option value="saude">Saúde / Farmácia</option>
+                        <option value="educacao">Educação / Faculdade</option>
+                        <option value="lazer">Lazer / Restaurantes</option>
+                        <option value="vestuario">Vestuário / Roupas</option>
+                        <option value="compras">Compras / Utilidades</option>
+                        <option value="servicos">Serviços / Assinaturas</option>
+                        <option value="pessoal">Cuidados Pessoais</option>
+                        <option value="viagens">Viagens / Passeios</option>
+                        <option value="presentes">Presentes / Doações</option>
+                        <option value="petshop">Animais (Petshop)</option>
+                        <option value="trabalho">Trabalho / Negócios</option>
+                        <option value="outros">Outros / Diversos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="expense-desc">Observação / Detalhe (Opcional)</label>
+                    <input type="text" id="expense-desc" class="form-control" placeholder="Ex: Almoço de domingo, Abastecimento Fiat, etc.">
+                </div>
+                <div class="modal-actions" style="margin-top: 24px;">
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeExpenseModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar Lançamento</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Alarme e Notificação -->
+    <div id="modal-alarm-alert" class="modal-overlay">
+        <div class="modal-content glass-card alarm-modal-content">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3 id="alarm-title" style="color: var(--danger); display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="bell" class="animate-bell" style="color: var(--danger);"></i>
+                    <span id="alarm-title-text">Alarme Ativo!</span>
+                </h3>
+                <button type="button" class="btn-close-modal" onclick="dismissAlarm()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body text-center" style="padding: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;">
+                <p id="alarm-message" style="font-size: 1.1rem; font-weight: 600; line-height: 1.4; color: var(--text-main);">O compromisso está começando agora.</p>
+                <div class="alarm-timer-status hidden" id="alarm-timer-status" style="font-size: 0.9rem; color: var(--text-muted);">
+                    Tempo limite esgotado!
+                </div>
+            </div>
+            <div class="modal-actions" style="justify-content: center; gap: 12px;">
+                <button type="button" id="btn-alarm-complete-task" class="btn-accent hidden" onclick="completeTimerTask()">Concluir Tarefa</button>
+                <button type="button" class="btn-danger" id="btn-alarm-dismiss" onclick="dismissAlarm()">Dispensar</button>
+            </div>
+        </div>
     </div>
 
     <!-- Chart.js: versão pinada + bundle minificado -->

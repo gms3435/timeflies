@@ -2058,3 +2058,531 @@ textarea.form-control {
         margin: -6px auto 10px auto;
     }
 }
+
+/* ============================================================
+   BARRA DE ALTERNAÇÃO DE VISUALIZAÇÃO DE TAREFAS
+   ============================================================ */
+.view-toggle-bar {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    margin-bottom: 12px;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 4px;
+    border-radius: var(--border-radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+[data-theme="light"] .view-toggle-bar {
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+.view-toggle-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition-normal);
+}
+.view-toggle-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.02);
+}
+[data-theme="light"] .view-toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+.view-toggle-btn.active {
+    background: var(--panel-bg);
+    color: var(--text-main);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--panel-border);
+}
+[data-theme="light"] .view-toggle-btn.active {
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.05);
+}
+
+/* ============================================================
+   PAINEL DE PRIORIDADES (TASKS PRIORITIES GRID)
+   ============================================================ */
+.tasks-priorities-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+@media (min-width: 769px) {
+    .tasks-priorities-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+        align-items: start;
+    }
+}
+.priority-column {
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: var(--border-radius-md);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 150px;
+}
+[data-theme="light"] .priority-column {
+    background: rgba(0, 0, 0, 0.01);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.priority-column.col-high {
+    border-top: 3px solid var(--danger);
+}
+.priority-column.col-medium {
+    border-top: 3px solid var(--warning);
+}
+.priority-column.col-low {
+    border-top: 3px solid #10b981;
+}
+
+.priority-column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+[data-theme="light"] .priority-column-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+.priority-column-header h3 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.col-high .priority-column-header h3 { color: var(--danger); }
+.col-medium .priority-column-header h3 { color: var(--warning); }
+.col-low .priority-column-header h3 { color: #10b981; }
+
+.priority-count-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 8px;
+    border-radius: 20px;
+    color: var(--text-muted);
+}
+[data-theme="light"] .priority-count-badge {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.priority-column-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 100px;
+}
+
+/* Cartões do painel de prioridades */
+.priority-task-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: var(--border-radius-sm);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: var(--transition-normal);
+}
+[data-theme="light"] .priority-task-card {
+    background: rgba(0, 0, 0, 0.015);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+.priority-task-card:hover {
+    border-color: var(--panel-border);
+    transform: translateY(-2px);
+}
+.priority-task-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+    line-height: 1.3;
+}
+.priority-task-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+.priority-task-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+    padding-top: 6px;
+    margin-top: 2px;
+}
+[data-theme="light"] .priority-task-actions {
+    border-top: 1px solid rgba(0, 0, 0, 0.03);
+}
+.btn-priority-move {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-fast);
+}
+.btn-priority-move:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+}
+[data-theme="light"] .btn-priority-move:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================================
+   TIMER DE EXECUÇÃO
+   ============================================================ */
+.timer-panel {
+    display: flex;
+    flex-direction: column;
+}
+.timer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.timer-display-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    padding: 20px;
+    border-radius: var(--border-radius-md);
+    width: 100%;
+}
+[data-theme="light"] .timer-display-section {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.timer-digital-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.timer-digital {
+    font-size: 3.5rem;
+    font-weight: 700;
+    font-family: monospace;
+    letter-spacing: -1px;
+    color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 10px rgba(234, 88, 12, 0.15);
+}
+[data-theme="light"] .timer-digital {
+    color: var(--primary);
+    text-shadow: none;
+}
+.timer-running-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+}
+
+.timer-progress-container {
+    width: 100%;
+    padding: 0 10px;
+}
+.timer-progress-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+}
+[data-theme="light"] .timer-progress-track {
+    background: rgba(0, 0, 0, 0.05);
+}
+.timer-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+    border-radius: 4px;
+    transition: width 0.5s linear;
+}
+
+.timer-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+}
+.timer-btn-play {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(234, 88, 12, 0.25);
+}
+.timer-btn-reset, .timer-btn-adjust {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* ============================================================
+   MODAL DE ALARME & ANIMAÇÃO
+   ============================================================ */
+.alarm-modal-content {
+    border: 1px solid var(--danger) !important;
+    background: rgba(30, 10, 10, 0.9) !important;
+    box-shadow: 0 10px 40px rgba(239, 68, 68, 0.25) !important;
+    animation: alarmPulse 2s infinite;
+}
+[data-theme="light"] .alarm-modal-content {
+    background: rgba(255, 240, 240, 0.95) !important;
+    box-shadow: 0 10px 40px rgba(220, 38, 38, 0.15) !important;
+}
+
+@keyframes alarmPulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.animate-bell {
+    animation: bellShake 1s infinite alternate;
+}
+
+@keyframes bellShake {
+    0% { transform: rotate(-10deg); }
+    100% { transform: rotate(10deg); }
+}
+
+#btn-toggle-alarms.muted {
+    opacity: 0.5;
+}
+#btn-toggle-alarms.muted .bell-on-icon {
+    display: none;
+}
+#btn-toggle-alarms.muted .bell-off-icon {
+    display: block !important;
+}
+
+/* ============================================================
+   TELA DE BLOQUEIO (LOCK SCREEN OVERLAY)
+   ============================================================ */
+.lock-screen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(13, 6, 4, 0.75);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.lock-screen-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+[data-theme="light"] .lock-screen-overlay {
+    background: rgba(255, 255, 255, 0.75);
+}
+.lock-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 20px 50px var(--panel-shadow);
+    padding: 32px 24px;
+    width: 90%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    transform: scale(0.95);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.lock-screen-overlay.active .lock-card {
+    transform: scale(1);
+}
+
+/* Efeito de tremor para senha incorreta */
+.lock-card.shake {
+    animation: shakeCard 0.4s ease;
+}
+@keyframes shakeCard {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+}
+
+/* ============================================================
+   ANOTADOR FINANCEIRO - TABELA E LAYOUT
+   ============================================================ */
+.finance-table {
+    width: 100%;
+    margin-top: 10px;
+    border-collapse: collapse;
+}
+.finance-table th {
+    font-weight: 700;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 10px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+}
+[data-theme="light"] .finance-table th {
+    border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+}
+.finance-table td {
+    padding: 12px 10px;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: middle;
+}
+[data-theme="light"] .finance-table td {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+.finance-table tr:hover td {
+    background: rgba(255, 255, 255, 0.01);
+}
+[data-theme="light"] .finance-table tr:hover td {
+    background: rgba(0, 0, 0, 0.01);
+}
+
+/* Badges de Método de Pagamento */
+.badge-payment {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.badge-payment.cash {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.badge-payment.card {
+    background: rgba(234, 88, 12, 0.1);
+    color: var(--accent);
+    border: 1px solid rgba(234, 88, 12, 0.2);
+}
+[data-theme="light"] .badge-payment.card {
+    color: var(--primary);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+/* Rádio de opções de pagamento (botões personalizados) */
+.payment-radio input[type="radio"]:checked + .payment-radio-label {
+    color: white;
+}
+.payment-radio input[type="radio"]:checked + .payment-radio-label::before {
+    background: var(--accent);
+}
+.payment-radio {
+    transition: var(--transition-fast);
+}
+.payment-radio:has(input[type="radio"]:checked) {
+    background: rgba(234, 88, 12, 0.1) !important;
+    border-color: var(--accent) !important;
+}
+[data-theme="light"] .payment-radio:has(input[type="radio"]:checked) {
+    background: rgba(220, 38, 38, 0.05) !important;
+    border-color: var(--primary) !important;
+}
+.payment-radio:has(input[type="radio"]:checked) .payment-radio-label {
+    color: var(--text-main) !important;
+}
+
+/* ============================================================
+   RESPONSIVIDADE E AJUSTES DE ABA DE FINANÇAS NO MOBILE
+   ============================================================ */
+@media (max-width: 768px) {
+    .finance-table thead {
+        display: none; /* Oculta cabeçalho no celular */
+    }
+    .finance-table tbody, .finance-table tr, .finance-table td {
+        display: block;
+        width: 100%;
+    }
+    .finance-table tr {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: var(--border-radius-md);
+        margin-bottom: 12px;
+        padding: 8px 12px;
+    }
+    [data-theme="light"] .finance-table tr {
+        background: rgba(0, 0, 0, 0.015);
+        border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+    .finance-table td {
+        border: none;
+        padding: 4px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: right;
+    }
+    .finance-table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        margin-right: 8px;
+        text-align: left;
+    }
+    .finance-table td:last-child {
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        margin-top: 6px;
+        padding-top: 8px;
+        justify-content: flex-end;
+    }
+    [data-theme="light"] .finance-table td:last-child {
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+}
+

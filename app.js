@@ -14,11 +14,17 @@ let state = {
     currentFilter: 'all',
     currentDayFilter: 'all', // 'all', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom', 'none'
     currentDay: DAY_KEYS[currentDayIndex],
-    theme: 'dark'
+    theme: 'dark',
+    taskView: 'list', // 'list' ou 'priorities'
+    alarmsActive: true
 };
 
-// CHART VARIABLE
+// CHART VARIABLES
 let timeChart = null;
+let priorityChart = null;
+
+// NOTIFIED BLOCKS TODAY (evita re-disparos no mesmo minuto)
+let notifiedBlocksToday = [];
 
 // UI ELEMENTS
 const elements = {
@@ -26,6 +32,7 @@ const elements = {
     tasksContainer: document.getElementById('tasks-list-container'),
     themeToggle: document.getElementById('theme-toggle'),
     btnResetData: document.getElementById('btn-reset-data'),
+    btnToggleAlarms: document.getElementById('btn-toggle-alarms'),
     btnClassCloseModals: document.querySelectorAll('.btn-close-modal'),
     
     // Modals
@@ -75,77 +82,251 @@ const elements = {
     assistantSuggestions: document.getElementById('assistant-suggestions'),
     
     // Export
-    btnExportWhatsApp: document.getElementById('btn-export-whatsapp')
+    btnExportWhatsApp: document.getElementById('btn-export-whatsapp'),
+
+    // Timer de Execução
+    timerTaskSelect: document.getElementById('timer-task-select'),
+    timerDisplay: document.getElementById('timer-display'),
+    timerProgressFill: document.getElementById('timer-progress-fill'),
+    timerRunningLabel: document.getElementById('timer-running-label'),
+    btnTimerToggle: document.getElementById('btn-timer-toggle'),
+    timerPlayIcon: document.getElementById('timer-play-icon'),
+
+    // Modal de Alarme
+    modalAlarmAlert: document.getElementById('modal-alarm-alert'),
+    alarmTitleText: document.getElementById('alarm-title-text'),
+    alarmMessage: document.getElementById('alarm-message'),
+    alarmTimerStatus: document.getElementById('alarm-timer-status'),
+    btnAlarmCompleteTask: document.getElementById('btn-alarm-complete-task')
 };
 
 // INITIALIZATION — usa 'load' para garantir que Chart.js e Lucide já carregaram
+// Chave de descriptografia temporária em memória RAM
+let userDecryptionKey = null;
+
 window.addEventListener('load', () => {
     loadData();
     initAppEvents();
-    renderAll();
 });
 
-// LOAD & SAVE DATA (LocalStorage with fallback)
+// LOAD & SAVE DATA (LocalStorage com Criptografia Opcional)
 function loadData() {
-    let savedBlocks, savedTasks, savedTheme;
+    let savedTheme, savedHasPassword;
     try {
-        const currentVersion = localStorage.getItem('tempus_version');
-        if (currentVersion !== '5') {
-            localStorage.removeItem('tempus_blocks');
-            localStorage.removeItem('tempus_tasks');
-            localStorage.setItem('tempus_version', '5');
-        }
-        savedBlocks = localStorage.getItem('tempus_blocks');
-        savedTasks = localStorage.getItem('tempus_tasks');
         savedTheme = localStorage.getItem('tempus_theme');
+        savedHasPassword = localStorage.getItem('tempus_has_password');
     } catch (e) {
-        console.warn('localStorage is not available. Using memory storage.', e);
+        console.warn('localStorage indisponível.', e);
     }
     
-    try {
-        state.blocks = savedBlocks ? JSON.parse(savedBlocks) : DEFAULT_BLOCKS;
-    } catch (e) {
-        console.error('Error parsing saved blocks, resetting to default.', e);
-        state.blocks = DEFAULT_BLOCKS;
-    }
-    
-    try {
-        state.tasks = savedTasks ? JSON.parse(savedTasks) : DEFAULT_TASKS;
-    } catch (e) {
-        console.error('Error parsing saved tasks, resetting to default.', e);
-        state.tasks = DEFAULT_TASKS;
-    }
-    
-    // Migration/Data Sanity check for weekdays
-    if (state.blocks) {
-        state.blocks.forEach(block => {
-            if (!block.day) block.day = state.currentDay;
-        });
-    }
-    if (state.tasks) {
-        state.tasks.forEach(task => {
-            if (task.day === undefined) task.day = "";
-        });
-    }
-
     state.theme = savedTheme || 'dark';
-    
-    // Apply Theme
     document.documentElement.setAttribute('data-theme', state.theme);
+    
+    state.hasPassword = (savedHasPassword === 'true');
+    
+    // Exibir Tela de Bloqueio na inicialização
+    const lockOverlay = document.getElementById('lock-screen-overlay');
+    if (lockOverlay) {
+        lockOverlay.classList.add('active');
+        const lockTitle = document.getElementById('lock-title');
+        const lockDesc = document.getElementById('lock-desc');
+        const lockReset = document.getElementById('lock-reset-section');
+        
+        if (state.hasPassword) {
+            if (lockTitle) lockTitle.textContent = "TimeFlies Seguro";
+            if (lockDesc) lockDesc.textContent = "Insira sua senha de acesso local para entrar.";
+            if (lockReset) lockReset.classList.remove('hidden');
+        } else {
+            if (lockTitle) lockTitle.textContent = "Configurar Senha Local";
+            if (lockDesc) lockDesc.textContent = "Crie uma senha de acesso local para proteger seus dados no celular.";
+            if (lockReset) lockReset.classList.add('hidden');
+        }
+    }
 }
 
 function saveData() {
     try {
-        localStorage.setItem('tempus_blocks', JSON.stringify(state.blocks));
-        localStorage.setItem('tempus_tasks', JSON.stringify(state.tasks));
         localStorage.setItem('tempus_theme', state.theme);
+        localStorage.setItem('tempus_has_password', state.hasPassword ? 'true' : 'false');
+        
+        if (state.hasPassword && userDecryptionKey) {
+            // Payload completo que vai para o LocalStorage de forma cifrada
+            const payload = {
+                blocks: state.blocks,
+                tasks: state.tasks,
+                finances: state.finances || [],
+                taskView: state.taskView,
+                alarmsActive: state.alarmsActive
+            };
+            
+            // Criptografa o JSON do payload usando a senha em memória
+            const encrypted = CryptoJS.AES.encrypt(JSON.stringify(payload), userDecryptionKey).toString();
+            localStorage.setItem('tempus_secure_payload', encrypted);
+        } else if (!state.hasPassword) {
+            // Salva sem criptografia se não tiver senha
+            localStorage.setItem('tempus_blocks', JSON.stringify(state.blocks));
+            localStorage.setItem('tempus_tasks', JSON.stringify(state.tasks));
+            localStorage.setItem('tempus_finances', JSON.stringify(state.finances || []));
+            localStorage.setItem('tempus_alarms', state.alarmsActive);
+            localStorage.setItem('tempus_view', state.taskView);
+        }
     } catch (e) {
-        console.warn('Could not save to localStorage.', e);
+        console.warn('Não foi possível salvar os dados no localStorage.', e);
+    }
+}
+
+// Desbloquear e Inicializar Aplicação
+function unlockAndInitializeApp(password, isFirstCreation = false) {
+    userDecryptionKey = password;
+    state.hasPassword = true;
+    
+    if (isFirstCreation) {
+        // Se é a primeira vez, migra dados não criptografados caso existam
+        let savedBlocks, savedTasks, savedFinances, savedAlarms, savedView;
+        try {
+            savedBlocks = localStorage.getItem('tempus_blocks');
+            savedTasks = localStorage.getItem('tempus_tasks');
+            savedFinances = localStorage.getItem('tempus_finances');
+            savedAlarms = localStorage.getItem('tempus_alarms');
+            savedView = localStorage.getItem('tempus_view');
+        } catch (e) {}
+        
+        state.blocks = savedBlocks ? JSON.parse(savedBlocks) : DEFAULT_BLOCKS;
+        state.tasks = savedTasks ? JSON.parse(savedTasks) : DEFAULT_TASKS;
+        state.finances = savedFinances ? JSON.parse(savedFinances) : [];
+        state.alarmsActive = savedAlarms !== 'false';
+        state.taskView = savedView === 'priorities' ? 'priorities' : 'list';
+        
+        // Remove chaves antigas por segurança
+        try {
+            localStorage.removeItem('tempus_blocks');
+            localStorage.removeItem('tempus_tasks');
+            localStorage.removeItem('tempus_finances');
+            localStorage.removeItem('tempus_alarms');
+            localStorage.removeItem('tempus_view');
+        } catch (e) {}
+        
+        // Salva os dados criptografados imediatamente
+        saveData();
+    } else {
+        // Tenta decodificar o payload seguro do LocalStorage
+        let securePayload;
+        try {
+            securePayload = localStorage.getItem('tempus_secure_payload');
+        } catch (e) {}
+        
+        if (securePayload) {
+            try {
+                const bytes = CryptoJS.AES.decrypt(securePayload, password);
+                const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
+                if (!decryptedStr) {
+                    throw new Error("Senha incorreta");
+                }
+                const parsed = JSON.parse(decryptedStr);
+                
+                state.blocks = parsed.blocks || [];
+                state.tasks = parsed.tasks || [];
+                state.finances = parsed.finances || [];
+                state.taskView = parsed.taskView || 'list';
+                state.alarmsActive = parsed.alarmsActive !== false;
+            } catch (e) {
+                console.error("Erro na descriptografia:", e);
+                return false; // Senha incorreta ou dados corrompidos
+            }
+        } else {
+            // Inicializa dados vazios
+            state.blocks = DEFAULT_BLOCKS;
+            state.tasks = DEFAULT_TASKS;
+            state.finances = [];
+            state.taskView = 'list';
+            state.alarmsActive = true;
+            saveData();
+        }
+    }
+    
+    // Ocultar a tela de bloqueio
+    const lockOverlay = document.getElementById('lock-screen-overlay');
+    if (lockOverlay) {
+        lockOverlay.classList.remove('active');
+    }
+    
+    // Sincroniza visualização de tarefas
+    const btnList = document.getElementById('btn-view-list');
+    const btnPriorities = document.getElementById('btn-view-priorities');
+    const containerPriorities = document.getElementById('tasks-priorities-container');
+    if (state.taskView === 'priorities') {
+        if (btnList) btnList.classList.remove('active');
+        if (btnPriorities) btnPriorities.classList.add('active');
+        elements.tasksContainer.classList.add('hidden');
+        if (containerPriorities) containerPriorities.classList.remove('hidden');
+    } else {
+        if (btnList) btnList.classList.add('active');
+        if (btnPriorities) btnPriorities.classList.remove('active');
+        elements.tasksContainer.classList.remove('hidden');
+        if (containerPriorities) containerPriorities.classList.add('hidden');
+    }
+    
+    // Renderiza todas as seções e abas
+    renderAll();
+    
+    // Iniciar loop de alarmes
+    setInterval(checkAgendaAlarms, 20000);
+    
+    // Solicitar permissão de notificação
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+    
+    return true; // Desbloqueado com sucesso
+}
+
+function handleLockSubmit(event) {
+    event.preventDefault();
+    const passInput = document.getElementById('lock-password-input');
+    const errorMsg = document.getElementById('lock-error-msg');
+    const lockCard = document.querySelector('.lock-card');
+    
+    if (!passInput) return;
+    const password = passInput.value.trim();
+    if (!password) return;
+    
+    let success = false;
+    if (state.hasPassword) {
+        success = unlockAndInitializeApp(password, false);
+    } else {
+        success = unlockAndInitializeApp(password, true);
+    }
+    
+    if (success) {
+        passInput.value = '';
+        if (errorMsg) errorMsg.classList.add('hidden');
+    } else {
+        if (errorMsg) errorMsg.classList.remove('hidden');
+        if (lockCard) {
+            lockCard.classList.add('shake');
+            setTimeout(() => {
+                lockCard.classList.remove('shake');
+            }, 400);
+        }
+        passInput.value = '';
+        passInput.focus();
+    }
+}
+
+function resetAllAppData() {
+    if (confirm('Atenção: Isso irá apagar PERMANENTEMENTE todos os seus dados e senhas salvas. Deseja redefinir o TimeFlies?')) {
+        try {
+            localStorage.clear();
+        } catch (e) {}
+        location.reload();
     }
 }
 
 // EVENTS BINDING
 function initAppEvents() {
+    // Sync alarm button state in UI
+    updateAlarmsButtonUI();
+
     // Reset Data
     if (elements.btnResetData) {
         elements.btnResetData.addEventListener('click', () => {
@@ -154,9 +335,27 @@ function initAppEvents() {
                     localStorage.removeItem('tempus_blocks');
                     localStorage.removeItem('tempus_tasks');
                     localStorage.removeItem('tempus_theme');
+                    localStorage.removeItem('tempus_alarms');
+                    localStorage.removeItem('tempus_view');
                 } catch (e) {}
                 location.reload();
             }
+        });
+    }
+
+    // Toggle Alarms
+    if (elements.btnToggleAlarms) {
+        elements.btnToggleAlarms.addEventListener('click', () => {
+            state.alarmsActive = !state.alarmsActive;
+            updateAlarmsButtonUI();
+            saveData();
+        });
+    }
+
+    // Timer Task Select
+    if (elements.timerTaskSelect) {
+        elements.timerTaskSelect.addEventListener('change', (e) => {
+            onTimerTaskSelect(e.target.value);
         });
     }
 
@@ -400,10 +599,20 @@ function renderAll() {
     }
 
     renderTimeline();
-    renderTasks();
+    
+    // Renderiza tarefas com base na visualização selecionada
+    if (state.taskView === 'priorities') {
+        renderPrioritiesGrid();
+    } else {
+        renderTasks();
+    }
+    
     renderHeaderStats();
     renderCharts();
     renderAssistantDropdown();
+    renderTimerTaskDropdown();
+    renderFinances(); // Renderiza lançamentos financeiros locais
+    updateAlarmsButtonUI();
     safeCreateIcons();
 }
 
@@ -680,10 +889,18 @@ function renderCharts() {
         if (legendEl) {
             legendEl.innerHTML = '<div class="placeholder-msg">Métricas indisponíveis (sem internet)</div>';
         }
+        const pLegendEl = document.getElementById('priority-chart-legend');
+        if (pLegendEl) {
+            pLegendEl.innerHTML = '<div class="placeholder-msg">Métricas indisponíveis (sem internet)</div>';
+        }
         return;
     }
-    const slots = calculateTimeSlots();
     
+    const slots = calculateTimeSlots();
+    const isDark = state.theme === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+    
+    // --- 1. GRÁFICO DE ALOCAÇÃO DE TEMPO ---
     let stats = {
         faculdade: 0,
         trabalho: 0,
@@ -707,10 +924,6 @@ function renderCharts() {
         (stats.busy / 60),
         (stats.free / 60)
     ];
-
-    const isDark = state.theme === 'dark';
-    const textColor = isDark ? '#94a3b8' : '#64748b';
-    const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
 
     const chartColors = [
         '#a855f7', // Faculdade (Purple)
@@ -778,14 +991,107 @@ function renderCharts() {
             }
         });
     }
+
+    // --- 2. GRÁFICO DE PRIORIDADES DE TAREFAS ---
+    let priorityStats = {
+        high: 0,
+        medium: 0,
+        low: 0
+    };
+
+    state.tasks.forEach(task => {
+        if (!task.completed) {
+            priorityStats[task.priority] = (priorityStats[task.priority] || 0) + 1;
+        }
+    });
+
+    const priorityValues = [
+        priorityStats.high,
+        priorityStats.medium,
+        priorityStats.low
+    ];
+
+    const priorityChartColors = [
+        '#ef4444', // Alta (Red)
+        '#f59e0b', // Média (Amber)
+        '#10b981'  // Baixa (Emerald)
+    ];
+
+    const priorityLabels = ['Alta', 'Média', 'Baixa'];
+
+    // Render Priority Legend
+    const pLegendEl = document.getElementById('priority-chart-legend');
+    if (pLegendEl) {
+        pLegendEl.innerHTML = '';
+        priorityLabels.forEach((label, idx) => {
+            const count = priorityValues[idx];
+            const color = priorityChartColors[idx];
+            
+            const item = document.createElement('div');
+            item.className = 'legend-item';
+            item.innerHTML = `
+                <span class="legend-label">
+                    <span class="legend-color" style="background-color: ${color}"></span>
+                    ${label}
+                </span>
+                <span class="legend-value">${count} ${count === 1 ? 'tarefa' : 'tarefas'}</span>
+            `;
+            pLegendEl.appendChild(item);
+        });
+    }
+
+    if (priorityChart) {
+        priorityChart.data.datasets[0].data = priorityValues;
+        priorityChart.options.plugins.legend.labels.color = textColor;
+        priorityChart.update();
+    } else {
+        const pCtx = document.getElementById('taskPriorityChart').getContext('2d');
+        priorityChart = new Chart(pCtx, {
+            type: 'doughnut',
+            data: {
+                labels: priorityLabels,
+                datasets: [{
+                    data: priorityValues,
+                    backgroundColor: priorityChartColors,
+                    borderWidth: isDark ? 2 : 1,
+                    borderColor: isDark ? '#0f172a' : '#ffffff',
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${context.raw} ${context.raw === 1 ? 'tarefa' : 'tarefas'}`;
+                            }
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+    }
 }
 
 function updateChartTheme() {
-    if (typeof Chart !== 'undefined' && timeChart) {
+    if (typeof Chart !== 'undefined') {
         const isDark = state.theme === 'dark';
-        timeChart.data.datasets[0].borderColor = isDark ? '#0f172a' : '#ffffff';
-        timeChart.data.datasets[0].borderWidth = isDark ? 2 : 1;
-        timeChart.update();
+        if (timeChart) {
+            timeChart.data.datasets[0].borderColor = isDark ? '#0f172a' : '#ffffff';
+            timeChart.data.datasets[0].borderWidth = isDark ? 2 : 1;
+            timeChart.update();
+        }
+        if (priorityChart) {
+            priorityChart.data.datasets[0].borderColor = isDark ? '#0f172a' : '#ffffff';
+            priorityChart.data.datasets[0].borderWidth = isDark ? 2 : 1;
+            priorityChart.update();
+        }
         renderCharts();
     }
 }
@@ -976,6 +1282,13 @@ function openTaskModal(id = null, event = null) {
     } else {
         const defaultDay = (state.currentDayFilter !== 'all' && state.currentDayFilter !== 'none') ? state.currentDayFilter : '';
         elements.taskDay.value = defaultDay;
+        
+        // Pré-preenche a data limite com o dia atual (fuso local do celular)
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+        const dd = now.getDate().toString().padStart(2, '0');
+        elements.taskDeadline.value = `${yyyy}-${mm}-${dd}`;
     }
 
     elements.modalTask.classList.add('active');
@@ -1189,3 +1502,757 @@ _Gerado via TimeFlies — O Tempo Voa!_`;
     const encoded = encodeURIComponent(msg);
     window.open(`https://wa.me/?text=${encoded}`, '_blank');
 }
+
+// ============================================================
+// SISTEMA DE ALARMES & SINTETIZADOR DE ÁUDIO (WEB AUDIO API)
+// ============================================================
+let audioCtx = null;
+let alarmIntervalId = null;
+
+function startAlarmAudio() {
+    if (alarmIntervalId) return;
+    try {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        
+        // Loop sonoro repetitivo (bipe de alarme)
+        alarmIntervalId = setInterval(() => {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // 880Hz (tom de bip claro)
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }, 800);
+    } catch (e) {
+        console.error("Erro ao inicializar AudioContext:", e);
+    }
+}
+
+function stopAlarmAudio() {
+    if (alarmIntervalId) {
+        clearInterval(alarmIntervalId);
+        alarmIntervalId = null;
+    }
+}
+
+// --- Sincronização Automática com o Dia Real do Celular ---
+function syncCurrentDayWithSystem() {
+    const todayIndex = new Date().getDay();
+    const systemDay = DAY_KEYS[todayIndex];
+    
+    // Se o dia da semana no celular mudou desde a última renderização (ex: meia-noite passou ou app saiu de background)
+    if (state.currentDay !== systemDay) {
+        state.currentDay = systemDay;
+        // Limpar bipes já tocados no dia anterior para permitir os novos de hoje
+        notifiedBlocksToday = [];
+        // Re-renderizar o aplicativo inteiro com a nova data atual
+        renderAll();
+    }
+}
+
+// --- Monitoramento Contínuo de Alarmes da Agenda ---
+function checkAgendaAlarms() {
+    // Sincroniza o dia atual do celular antes de checar os alarmes
+    syncCurrentDayWithSystem();
+
+    if (!state.alarmsActive) return;
+
+    const now = new Date();
+    const hh = now.getHours().toString().padStart(2, '0');
+    const mm = now.getMinutes().toString().padStart(2, '0');
+    const currentTimeStr = `${hh}:${mm}`;
+
+    // Filtrar blocos de hoje
+    const dayBlocks = state.blocks.filter(b => b.day === state.currentDay);
+
+    dayBlocks.forEach(block => {
+        if (block.start === currentTimeStr && !notifiedBlocksToday.includes(block.id)) {
+            notifiedBlocksToday.push(block.id);
+            triggerAlarm(
+                "Compromisso Iniciando!", 
+                `O compromisso "${block.title}" está agendado para começar agora (${block.start}).`, 
+                false
+            );
+        }
+    });
+}
+
+function triggerAlarm(title, message, isTimer = false) {
+    if (elements.modalAlarmAlert) {
+        elements.alarmTitleText.textContent = title;
+        elements.alarmMessage.textContent = message;
+        
+        if (isTimer) {
+            elements.alarmTimerStatus.classList.remove('hidden');
+            elements.btnAlarmCompleteTask.classList.remove('hidden');
+        } else {
+            elements.alarmTimerStatus.classList.add('hidden');
+            elements.btnAlarmCompleteTask.classList.add('hidden');
+        }
+
+        elements.modalAlarmAlert.classList.add('active');
+    }
+
+    // Tocar sinal sonoro
+    startAlarmAudio();
+
+    // Notificação Nativa do Sistema
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+            new Notification(title, {
+                body: message,
+                icon: 'icon-192.png'
+            });
+        } catch (e) {
+            console.warn("Erro ao emitir notificação nativa:", e);
+        }
+    }
+}
+
+function dismissAlarm() {
+    if (elements.modalAlarmAlert) {
+        elements.modalAlarmAlert.classList.remove('active');
+    }
+    stopAlarmAudio();
+}
+
+function updateAlarmsButtonUI() {
+    if (elements.btnToggleAlarms) {
+        if (state.alarmsActive) {
+            elements.btnToggleAlarms.classList.remove('muted');
+            elements.btnToggleAlarms.title = "Silenciar Alarmes de Agenda (Ativo)";
+        } else {
+            elements.btnToggleAlarms.classList.add('muted');
+            elements.btnToggleAlarms.title = "Ativar Alarmes de Agenda (Silenciado)";
+        }
+    }
+}
+
+// ============================================================
+// TIMER DE EXECUÇÃO
+// ============================================================
+let timerIntervalId = null;
+let timerSecondsRemaining = 1500; // 25 minutos padrão
+let timerTotalSeconds = 1500;
+let timerTaskId = null;
+let timerStatus = 'idle'; // 'idle', 'running', 'paused'
+
+function renderTimerTaskDropdown() {
+    if (!elements.timerTaskSelect) return;
+    const selectedVal = elements.timerTaskSelect.value;
+    elements.timerTaskSelect.innerHTML = '<option value="">Selecione uma tarefa para executar...</option>';
+
+    const pendingTasks = state.tasks.filter(t => !t.completed);
+    pendingTasks.forEach(task => {
+        const opt = document.createElement('option');
+        opt.value = task.id;
+        opt.textContent = `${task.title} (${formatMinutesDuration(task.duration)})`;
+        elements.timerTaskSelect.appendChild(opt);
+    });
+
+    if (pendingTasks.some(t => t.id === selectedVal)) {
+        elements.timerTaskSelect.value = selectedVal;
+    } else {
+        elements.timerTaskSelect.value = '';
+        if (timerStatus === 'idle') {
+            timerTaskId = null;
+        }
+    }
+}
+
+function onTimerTaskSelect(taskId) {
+    if (timerStatus === 'running') {
+        if (!confirm("O timer está em execução. Deseja cancelar o timer atual para iniciar a nova tarefa?")) {
+            elements.timerTaskSelect.value = timerTaskId || '';
+            return;
+        }
+        resetTimer();
+    }
+
+    timerTaskId = taskId || null;
+
+    if (timerTaskId) {
+        const task = state.tasks.find(t => t.id === timerTaskId);
+        if (task) {
+            timerSecondsRemaining = task.duration * 60;
+            timerTotalSeconds = timerSecondsRemaining;
+        }
+    } else {
+        timerSecondsRemaining = 1500; // 25 min default
+        timerTotalSeconds = 1500;
+    }
+
+    updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+    if (!elements.timerDisplay) return;
+
+    const mins = Math.floor(timerSecondsRemaining / 60).toString().padStart(2, '0');
+    const secs = (timerSecondsRemaining % 60).toString().padStart(2, '0');
+    elements.timerDisplay.textContent = `${mins}:${secs}`;
+
+    // Atualiza barra de progresso
+    if (elements.timerProgressFill && timerTotalSeconds > 0) {
+        const pct = (timerSecondsRemaining / timerTotalSeconds) * 100;
+        elements.timerProgressFill.style.width = `${pct}%`;
+    }
+
+    // Label do status
+    if (elements.timerRunningLabel) {
+        if (timerStatus === 'running') {
+            elements.timerRunningLabel.textContent = "Executando...";
+            elements.timerRunningLabel.style.color = "var(--success)";
+        } else if (timerStatus === 'paused') {
+            elements.timerRunningLabel.textContent = "Pausado";
+            elements.timerRunningLabel.style.color = "var(--warning)";
+        } else {
+            elements.timerRunningLabel.textContent = "Pronto";
+            elements.timerRunningLabel.style.color = "var(--text-muted)";
+        }
+    }
+
+    // Toggle Icon Play/Pause
+    if (elements.timerPlayIcon) {
+        if (timerStatus === 'running') {
+            elements.timerPlayIcon.setAttribute('data-lucide', 'pause');
+        } else {
+            elements.timerPlayIcon.setAttribute('data-lucide', 'play');
+        }
+        safeCreateIcons();
+    }
+}
+
+function toggleTimer() {
+    if (timerStatus === 'running') {
+        // Pausar
+        clearInterval(timerIntervalId);
+        timerIntervalId = null;
+        timerStatus = 'paused';
+        updateTimerDisplay();
+    } else {
+        // Iniciar ou Retomar
+        timerStatus = 'running';
+        updateTimerDisplay();
+        
+        timerIntervalId = setInterval(() => {
+            if (timerSecondsRemaining > 0) {
+                timerSecondsRemaining--;
+                updateTimerDisplay();
+            } else {
+                // Tempo acabou!
+                clearInterval(timerIntervalId);
+                timerIntervalId = null;
+                timerStatus = 'idle';
+                updateTimerDisplay();
+
+                let alarmMsg = "O tempo limite para a execução do foco acabou!";
+                if (timerTaskId) {
+                    const task = state.tasks.find(t => t.id === timerTaskId);
+                    if (task) alarmMsg = `O tempo limite de execução para a tarefa "${task.title}" acabou!`;
+                }
+
+                triggerAlarm("Tempo Limite Atingido!", alarmMsg, true);
+            }
+        }, 1000);
+    }
+}
+
+function resetTimer() {
+    clearInterval(timerIntervalId);
+    timerIntervalId = null;
+    timerStatus = 'idle';
+
+    if (timerTaskId) {
+        const task = state.tasks.find(t => t.id === timerTaskId);
+        if (task) {
+            timerSecondsRemaining = task.duration * 60;
+            timerTotalSeconds = timerSecondsRemaining;
+        }
+    } else {
+        timerSecondsRemaining = 1500;
+        timerTotalSeconds = 1500;
+    }
+
+    updateTimerDisplay();
+}
+
+function adjustTimer(amount) {
+    timerSecondsRemaining = Math.max(0, timerSecondsRemaining + amount);
+    if (timerSecondsRemaining > timerTotalSeconds) {
+        timerTotalSeconds = timerSecondsRemaining;
+    }
+    updateTimerDisplay();
+}
+
+function completeTimerTask() {
+    if (timerTaskId) {
+        toggleTaskCompletion(timerTaskId);
+        // Limpa seleção do timer
+        elements.timerTaskSelect.value = '';
+        timerTaskId = null;
+        resetTimer();
+    }
+    dismissAlarm();
+}
+
+// ============================================================
+// TABELA E PAINEL DE PRIORIDADES (EISENHOWER-STYLE BOARD)
+// ============================================================
+function switchTaskView(viewMode) {
+    state.taskView = viewMode;
+    saveData();
+
+    const btnList = document.getElementById('btn-view-list');
+    const btnPriorities = document.getElementById('btn-view-priorities');
+    
+    if (viewMode === 'priorities') {
+        if (btnList) btnList.classList.remove('active');
+        if (btnPriorities) btnPriorities.classList.add('active');
+        
+        elements.tasksContainer.classList.add('hidden');
+        document.getElementById('tasks-priorities-container').classList.remove('hidden');
+        renderPrioritiesGrid();
+    } else {
+        if (btnList) btnList.classList.add('active');
+        if (btnPriorities) btnPriorities.classList.remove('active');
+        
+        elements.tasksContainer.classList.remove('hidden');
+        document.getElementById('tasks-priorities-container').classList.add('hidden');
+        renderTasks();
+    }
+    safeCreateIcons();
+}
+
+function renderPrioritiesGrid() {
+    const container = document.getElementById('tasks-priorities-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const priorityColumns = {
+        high: { title: 'Alta Prioridade', class: 'col-high' },
+        medium: { title: 'Média Prioridade', class: 'col-medium' },
+        low: { title: 'Baixa Prioridade', class: 'col-low' }
+    };
+
+    const categoriesLabels = { casa: 'Casa', trabalho: 'Trabalho', faculdade: 'Faculdade' };
+    const dayLabels = { seg: 'Seg', ter: 'Ter', qua: 'Qua', qui: 'Qui', sex: 'Sex', sab: 'Sáb', dom: 'Dom' };
+
+    // Filtra tarefas conforme categorias
+    const filteredTasks = state.tasks.filter(task => {
+        const matchesCategory = (state.currentFilter === 'all' || task.category === state.currentFilter);
+        
+        let matchesDay = true;
+        if (state.currentDayFilter === 'none') {
+            matchesDay = (!task.day);
+        } else if (state.currentDayFilter !== 'all') {
+            matchesDay = (task.day === state.currentDayFilter);
+        }
+        
+        return matchesCategory && matchesDay && !task.completed;
+    });
+
+    Object.entries(priorityColumns).forEach(([pKey, pCol]) => {
+        const colDiv = document.createElement('div');
+        colDiv.className = `priority-column ${pCol.class}`;
+
+        const colTasks = filteredTasks.filter(t => t.priority === pKey);
+
+        colDiv.innerHTML = `
+            <div class="priority-column-header">
+                <h3>${pCol.title}</h3>
+                <span class="priority-count-badge">${colTasks.length}</span>
+            </div>
+            <div class="priority-column-body" id="col-body-${pKey}">
+                <!-- Inserido dinamicamente -->
+            </div>
+        `;
+
+        container.appendChild(colDiv);
+
+        const bodyDiv = colDiv.querySelector(`#col-body-${pKey}`);
+
+        if (colTasks.length === 0) {
+            bodyDiv.innerHTML = `
+                <div class="placeholder-msg" style="padding: 16px 8px; font-size: 0.75rem;">
+                    Nenhuma tarefa pendente
+                </div>
+            `;
+            return;
+        }
+
+        colTasks.forEach(task => {
+            const card = document.createElement('div');
+            card.className = `priority-task-card cat-${task.category}`;
+
+            let moveUpBtn = '';
+            let moveDownBtn = '';
+
+            // Se for Média ou Baixa, pode subir
+            if (pKey === 'medium') {
+                moveUpBtn = `<button class="btn-priority-move" onclick="changeTaskPriority('${task.id}', 'high')" title="Subir para Alta"><i data-lucide="chevron-left" style="width:14px; height:14px;"></i></button>`;
+                moveDownBtn = `<button class="btn-priority-move" onclick="changeTaskPriority('${task.id}', 'low')" title="Descer para Baixa"><i data-lucide="chevron-right" style="width:14px; height:14px;"></i></button>`;
+            } else if (pKey === 'low') {
+                moveUpBtn = `<button class="btn-priority-move" onclick="changeTaskPriority('${task.id}', 'medium')" title="Subir para Média"><i data-lucide="chevron-left" style="width:14px; height:14px;"></i></button>`;
+            } else if (pKey === 'high') {
+                moveDownBtn = `<button class="btn-priority-move" onclick="changeTaskPriority('${task.id}', 'medium')" title="Descer para Média"><i data-lucide="chevron-right" style="width:14px; height:14px;"></i></button>`;
+            }
+
+            card.innerHTML = `
+                <div class="task-header" style="padding: 0; border: none; background: transparent; box-shadow: none;">
+                    <button class="btn-checkbox" onclick="toggleTaskCompletion('${task.id}', event)">
+                        <i data-lucide="check" style="width:12px; height:12px;"></i>
+                    </button>
+                    <div class="task-info" onclick="openTaskModal('${task.id}')" style="cursor: pointer;">
+                        <span class="priority-task-title">${task.title}</span>
+                    </div>
+                </div>
+                <div class="priority-task-meta">
+                    <span class="meta-tag tag-duration"><i data-lucide="hourglass"></i> ${formatMinutesDuration(task.duration)}</span>
+                    <span class="meta-tag tag-category" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; color: var(--text-muted);">${categoriesLabels[task.category]}</span>
+                    ${task.day ? `<span class="meta-tag tag-day"><i data-lucide="calendar"></i> ${dayLabels[task.day]}</span>` : ''}
+                </div>
+                <div class="priority-task-actions">
+                    <button class="btn-priority-move" onclick="openTaskModal('${task.id}', event)" title="Editar"><i data-lucide="edit-3" style="width:12px; height:12px;"></i></button>
+                    <div style="flex: 1;"></div>
+                    ${moveUpBtn}
+                    ${moveDownBtn}
+                </div>
+            `;
+            bodyDiv.appendChild(card);
+        });
+    });
+}
+
+function changeTaskPriority(taskId, newPriority) {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (task) {
+        task.priority = newPriority;
+        saveData();
+        renderAll();
+    }
+}
+
+// Expor funções globais para escopos de eventos HTML
+// Expor funções globais para escopos de eventos HTML
+window.switchTaskView = switchTaskView;
+window.changeTaskPriority = changeTaskPriority;
+window.dismissAlarm = dismissAlarm;
+window.toggleTimer = toggleTimer;
+window.resetTimer = resetTimer;
+window.adjustTimer = adjustTimer;
+window.completeTimerTask = completeTimerTask;
+window.onTimerTaskSelect = onTimerTaskSelect;
+window.checkAgendaAlarms = checkAgendaAlarms;
+window.syncCurrentDayWithSystem = syncCurrentDayWithSystem;
+
+// ============================================================
+// ANOTADOR FINANCEIRO LOCAL
+// ============================================================
+function openExpenseModal() {
+    const modal = document.getElementById('modal-expense');
+    if (!modal) return;
+    
+    document.getElementById('expense-form').reset();
+    
+    // Pré-preenche a data de hoje local
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+    const dd = now.getDate().toString().padStart(2, '0');
+    document.getElementById('expense-date').value = `${yyyy}-${mm}-${dd}`;
+    
+    modal.classList.add('active');
+}
+
+function closeExpenseModal() {
+    const modal = document.getElementById('modal-expense');
+    if (modal) modal.classList.remove('active');
+}
+
+function saveExpense(event) {
+    event.preventDefault();
+    
+    const date = document.getElementById('expense-date').value;
+    const amount = parseFloat(document.getElementById('expense-amount').value);
+    const methodEl = document.querySelector('input[name="expense-method"]:checked');
+    const method = methodEl ? methodEl.value : 'cash';
+    const category = document.getElementById('expense-category').value;
+    const desc = document.getElementById('expense-desc').value.trim();
+    
+    if (!date || isNaN(amount) || amount <= 0) {
+        alert('Por favor, preencha todos os campos obrigatórios corretamente.');
+        return;
+    }
+    
+    const newExpense = {
+        id: 'e_' + Date.now(),
+        date,
+        amount,
+        method,
+        category,
+        desc
+    };
+    
+    if (!state.finances) state.finances = [];
+    state.finances.unshift(newExpense); // Insere no topo
+    
+    saveData();
+    closeExpenseModal();
+    renderAll();
+}
+
+function deleteExpense(id) {
+    if (confirm('Deseja realmente excluir este lançamento financeiro?')) {
+        state.finances = state.finances.filter(e => e.id !== id);
+        saveData();
+        renderAll();
+    }
+}
+
+function clearAllExpenses() {
+    if (confirm('Atenção: Isso irá apagar permanentemente todos os lançamentos financeiros anotados localmente no seu celular. Deseja continuar?')) {
+        state.finances = [];
+        saveData();
+        renderAll();
+    }
+}
+
+function renderFinances() {
+    const tbody = document.getElementById('finance-tbody');
+    const emptyMsg = document.getElementById('finance-empty-msg');
+    
+    const totalCashEl = document.getElementById('finance-total-cash');
+    const totalCardEl = document.getElementById('finance-total-card');
+    const totalAllEl = document.getElementById('finance-total-all');
+    
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const finances = state.finances || [];
+    
+    let totalCash = 0;
+    let totalCard = 0;
+    
+    const categoriesLabels = {
+        alimentacao: 'Alimentação / Mercado',
+        transporte: 'Transporte / Combustível',
+        moradia: 'Moradia (Aluguel, Contas)',
+        saude: 'Saúde / Farmácia',
+        educacao: 'Educação / Faculdade',
+        lazer: 'Lazer / Restaurantes',
+        vestuario: 'Vestuário / Roupas',
+        compras: 'Compras / Utilidades',
+        servicos: 'Serviços / Assinaturas',
+        pessoal: 'Cuidados Pessoais',
+        viagens: 'Viagens / Passeios',
+        presentes: 'Presentes / Doações',
+        petshop: 'Animais (Petshop)',
+        trabalho: 'Trabalho / Negócios',
+        outros: 'Outros / Diversos'
+    };
+    
+    if (finances.length === 0) {
+        if (emptyMsg) emptyMsg.classList.remove('hidden');
+        tbody.parentElement.style.display = 'none'; // Esconde a tabela se vazia
+    } else {
+        if (emptyMsg) emptyMsg.classList.add('hidden');
+        tbody.parentElement.style.display = 'table'; // Exibe a tabela
+        
+        finances.forEach(item => {
+            const tr = document.createElement('tr');
+            
+            // Calcula totais
+            if (item.method === 'cash') {
+                totalCash += item.amount;
+            } else {
+                totalCard += item.amount;
+            }
+            
+            const methodLabel = item.method === 'cash' ? 'À Vista' : 'Cartão';
+            const methodClass = item.method === 'cash' ? 'cash' : 'card';
+            
+            // Format date to local standard DD/MM/YYYY
+            const [y, m, d] = item.date.split('-');
+            const formattedDate = `${d}/${m}/${y}`;
+            
+            tr.innerHTML = `
+                <td data-label="Data" style="padding: 10px; font-weight: 500;">${formattedDate}</td>
+                <td data-label="Categoria" style="padding: 10px; color: var(--text-muted);">${categoriesLabels[item.category] || item.category}</td>
+                <td data-label="Método" style="padding: 10px;"><span class="badge-payment ${methodClass}">${methodLabel}</span></td>
+                <td data-label="Valor" style="padding: 10px; text-align: right; font-weight: 700; color: var(--text-main);">R$ ${item.amount.toFixed(2).replace('.', ',')}</td>
+                <td data-label="Observação" style="padding: 10px; font-style: italic; color: var(--text-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.desc || '-'}</td>
+                <td data-label="Ação" style="padding: 10px; text-align: center;">
+                    <button class="btn-task-action delete" onclick="deleteExpenseDirect('${item.id}', event)" title="Excluir" style="padding: 4px; border-radius: 4px; border: none; background: transparent; color: var(--danger); cursor: pointer;">
+                        <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    // Atualiza indicadores de somatório
+    if (totalCashEl) totalCashEl.textContent = `R$ ${totalCash.toFixed(2).replace('.', ',')}`;
+    if (totalCardEl) totalCardEl.textContent = `R$ ${totalCard.toFixed(2).replace('.', ',')}`;
+    if (totalAllEl) totalAllEl.textContent = `R$ ${(totalCash + totalCard).toFixed(2).replace('.', ',')}`;
+    
+    safeCreateIcons();
+}
+
+window.deleteExpenseDirect = function(id, event) {
+    if (event) event.stopPropagation();
+    deleteExpense(id);
+};
+
+// ============================================================
+// SISTEMA DE SEGURANÇA E BACKUP LOCAL
+// ============================================================
+function exportBackup() {
+    if (!state.hasPassword || !userDecryptionKey) {
+        alert("Para exportar seus dados de forma segura, você precisa definir uma senha de acesso primeiro.");
+        return;
+    }
+    
+    try {
+        const payload = {
+            blocks: state.blocks,
+            tasks: state.tasks,
+            finances: state.finances || [],
+            taskView: state.taskView,
+            alarmsActive: state.alarmsActive
+        };
+        
+        // Criptografa o backup completo
+        const encrypted = CryptoJS.AES.encrypt(JSON.stringify(payload), userDecryptionKey).toString();
+        
+        const backupData = {
+            version: 'timeflies-v3-backup',
+            payload: encrypted
+        };
+        
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `timeflies_secure_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        alert("Erro ao exportar backup: " + e.message);
+    }
+}
+
+function importBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.version !== 'timeflies-v3-backup' || !data.payload) {
+                alert("O arquivo selecionado não é um backup válido do TimeFlies.");
+                return;
+            }
+            
+            const backupPassword = prompt("Insira a senha usada para criptografar este arquivo de backup:");
+            if (!backupPassword) {
+                event.target.value = '';
+                return;
+            }
+            
+            // Tenta decodificar com a senha fornecida
+            const bytes = CryptoJS.AES.decrypt(data.payload, backupPassword);
+            const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
+            
+            if (!decryptedStr) {
+                alert("Senha do backup incorreta. Não foi possível restaurar os dados.");
+                event.target.value = '';
+                return;
+            }
+            
+            const parsed = JSON.parse(decryptedStr);
+            
+            // Restaura no estado e na memória
+            state.blocks = parsed.blocks || [];
+            state.tasks = parsed.tasks || [];
+            state.finances = parsed.finances || [];
+            state.taskView = parsed.taskView || 'list';
+            state.alarmsActive = parsed.alarmsActive !== false;
+            
+            userDecryptionKey = backupPassword;
+            state.hasPassword = true;
+            
+            // Salva no LocalStorage seguro
+            saveData();
+            
+            // Recarrega visualizações
+            renderAll();
+            
+            alert("Backup restaurado com sucesso!");
+        } catch (err) {
+            alert("Erro ao ler o arquivo de backup: " + err.message);
+        }
+        event.target.value = ''; // Limpa input
+    };
+    reader.readAsText(file);
+}
+
+function changeAccessPassword() {
+    if (!state.hasPassword || !userDecryptionKey) {
+        alert("Crie uma senha de acesso primeiro para poder alterá-la.");
+        return;
+    }
+    
+    const currentPass = prompt("Insira sua senha atual:");
+    if (currentPass !== userDecryptionKey) {
+        alert("Senha atual incorreta.");
+        return;
+    }
+    
+    const newPass = prompt("Insira a nova senha (não esqueça!):");
+    if (!newPass) return;
+    
+    const confirmPass = prompt("Confirme a nova senha:");
+    if (newPass !== confirmPass) {
+        alert("A confirmação de senha não confere.");
+        return;
+    }
+    
+    // Altera a chave
+    userDecryptionKey = newPass;
+    saveData();
+    alert("Senha de acesso alterada com sucesso!");
+}
+
+// Expor novas ações financeiras e de segurança na janela
+window.openExpenseModal = openExpenseModal;
+window.closeExpenseModal = closeExpenseModal;
+window.saveExpense = saveExpense;
+window.clearAllExpenses = clearAllExpenses;
+window.deleteExpense = deleteExpense;
+window.exportBackup = exportBackup;
+window.importBackup = importBackup;
+window.changeAccessPassword = changeAccessPassword;
+window.handleLockSubmit = handleLockSubmit;
+window.resetAllAppData = resetAllAppData;
+
