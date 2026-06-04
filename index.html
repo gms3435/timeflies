@@ -69,6 +69,9 @@
         <!-- HEADER -->
         <header class="app-header">
             <div class="header-logo">
+                <button id="btn-open-drawer" class="btn-hamburger" onclick="toggleDrawer(true)" title="Menu de Navegação">
+                    <i data-lucide="menu"></i>
+                </button>
                 <div class="logo-icon">
                     <i data-lucide="clock-4"></i>
                 </div>
@@ -95,6 +98,12 @@
             </div>
 
             <div class="header-actions">
+                <button class="btn-primary btn-trigger-add-task header-quick-btn" title="Nova Tarefa">
+                    <i data-lucide="plus"></i> <span>Nova Tarefa</span>
+                </button>
+                <button class="btn-secondary btn-trigger-add-block header-quick-btn" title="Bloquear Horário">
+                    <i data-lucide="calendar-plus"></i> <span>Bloquear Horário</span>
+                </button>
                 <button id="btn-reset-data" class="btn-icon" title="Limpar e Reiniciar Dados" style="color: var(--danger); border-color: rgba(220, 38, 38, 0.2);">
                     <i data-lucide="trash-2"></i>
                 </button>
@@ -109,31 +118,52 @@
             </div>
         </header>
 
-        <!-- NAVEGAÇÃO POR ABAS -->
-        <nav class="app-tabs-nav">
-            <div class="tabs-list-buttons">
-                <button class="app-tab-link active" onclick="switchMainTab('tab-agenda')">
-                    <i data-lucide="calendar"></i> Agenda Diária
-                </button>
-                <button class="app-tab-link" onclick="switchMainTab('tab-tarefas')">
-                    <i data-lucide="check-square"></i> Minhas Tarefas
-                </button>
-                <button class="app-tab-link" onclick="switchMainTab('tab-finances')">
-                    <i data-lucide="wallet"></i> Minhas Finanças
-                </button>
-                <button class="app-tab-link" onclick="switchMainTab('tab-metrics')">
-                    <i data-lucide="sparkles"></i> Métricas & Smart Fit
-                </button>
-            </div>
-            <div class="quick-actions">
-                <button class="btn-primary btn-trigger-add-task btn-sm">
-                    <i data-lucide="plus"></i> Nova Tarefa
-                </button>
-                <button class="btn-secondary btn-trigger-add-block btn-sm">
-                    <i data-lucide="calendar-plus"></i> Bloquear Horário
+    <!-- MENU DRAWER LATERAL -->
+    <div id="app-drawer" class="app-drawer">
+        <div class="drawer-overlay" onclick="toggleDrawer(false)"></div>
+        <div class="drawer-content glass-card">
+            <div class="drawer-header">
+                <div class="header-logo" style="margin: 0; gap: 8px;">
+                    <div class="logo-icon"><i data-lucide="clock-4"></i></div>
+                    <div>
+                        <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin: 0;">TimeFlies v2.5</h2>
+                        <p class="subtitle" style="font-size: 0.65rem; color: var(--text-muted); margin: 0;">O Tempo Voa</p>
+                    </div>
+                </div>
+                <button class="btn-icon" onclick="toggleDrawer(false)" title="Fechar Menu" style="border: none; background: transparent; color: var(--text-muted); padding: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <i data-lucide="x" style="width: 20px; height: 20px;"></i>
                 </button>
             </div>
-        </nav>
+            
+            <nav class="drawer-nav">
+                <button class="drawer-link active" onclick="selectDrawerTab('tab-agenda')">
+                    <i data-lucide="calendar"></i> <span>Agenda Diária</span>
+                </button>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-tarefas')">
+                    <i data-lucide="check-square"></i> <span>Minhas Tarefas</span>
+                </button>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-timer')">
+                    <i data-lucide="timer"></i> <span>Timer de Foco</span>
+                </button>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-smartfit')">
+                    <i data-lucide="sparkles"></i> <span>Smart Fit</span>
+                </button>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-metrics')">
+                    <i data-lucide="pie-chart"></i> <span>Métricas & Gráficos</span>
+                </button>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-finances')">
+                    <i data-lucide="wallet"></i> <span>Controle Financeiro</span>
+                </button>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-settings')">
+                    <i data-lucide="settings"></i> <span>Ajustes & Segurança</span>
+                </button>
+            </nav>
+            
+            <div class="drawer-footer" style="padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: auto;">
+                TimeFlies Seguro • Local e Offline
+            </div>
+        </div>
+    </div>
 
         <!-- MAIN LAYOUT -->
         <main class="app-main">
@@ -303,55 +333,9 @@
                 </section>
             </div>
             
-            <!-- ABA 4: Métricas & Smart Fit -->
-            <div id="tab-metrics" class="tab-content">
-                <section class="sidebar-column">
-                    <!-- Gráfico de Alocação de Tempo -->
-                    <div class="glass-panel metrics-panel">
-                        <div class="panel-header">
-                            <i data-lucide="pie-chart" class="text-primary"></i>
-                            <h2>Alocação de Tempo</h2>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="timeAllocationChart"></canvas>
-                        </div>
-                        <div id="chart-legend" class="chart-legend"></div>
-                    </div>
-
-                    <!-- Gráfico de Prioridades de Tarefas -->
-                    <div class="glass-panel metrics-panel">
-                        <div class="panel-header">
-                            <i data-lucide="bar-chart-horizontal" class="text-success"></i>
-                            <h2>Prioridades das Tarefas</h2>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="taskPriorityChart"></canvas>
-                        </div>
-                        <div id="priority-chart-legend" class="chart-legend"></div>
-                    </div>
-    
-                    <!-- Smart Scheduling Assistant -->
-                    <div class="glass-panel assistant-panel">
-                        <div class="panel-header">
-                            <i data-lucide="sparkles" class="text-accent"></i>
-                            <h2>Assistente Smart Fit</h2>
-                        </div>
-                        <p class="panel-desc">Selecione uma tarefa para encontrar janelas livres no seu dia para realizá-la:</p>
-                        <div class="assistant-content">
-                            <div class="select-task-wrapper">
-                                <select id="assistant-task-select" class="form-control">
-                                    <option value="">Selecione uma tarefa pendente...</option>
-                                </select>
-                            </div>
-                            <div id="assistant-suggestions" class="suggestions-list">
-                                <div class="placeholder-msg">
-                                    <i data-lucide="info"></i>
-                                    Selecione uma tarefa acima para ver sugestões de encaixe.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+            <!-- ABA: Timer de Foco -->
+            <div id="tab-timer" class="tab-content">
+                <section class="sidebar-column" style="width: 100%; max-width: 600px; margin: 0 auto;">
                     <!-- Timer de Execução -->
                     <div class="glass-panel timer-panel">
                         <div class="panel-header">
@@ -390,7 +374,68 @@
                             </div>
                         </div>
                     </div>
+                </section>
+            </div>
 
+            <!-- ABA: Assistente Smart Fit -->
+            <div id="tab-smartfit" class="tab-content">
+                <section class="sidebar-column" style="width: 100%; max-width: 600px; margin: 0 auto;">
+                    <!-- Smart Scheduling Assistant -->
+                    <div class="glass-panel assistant-panel">
+                        <div class="panel-header">
+                            <i data-lucide="sparkles" class="text-accent"></i>
+                            <h2>Assistente Smart Fit</h2>
+                        </div>
+                        <p class="panel-desc">Selecione uma tarefa para encontrar janelas livres no seu dia para realizá-la:</p>
+                        <div class="assistant-content">
+                            <div class="select-task-wrapper">
+                                <select id="assistant-task-select" class="form-control">
+                                    <option value="">Selecione uma tarefa pendente...</option>
+                                </select>
+                            </div>
+                            <div id="assistant-suggestions" class="suggestions-list">
+                                <div class="placeholder-msg">
+                                    <i data-lucide="info"></i>
+                                    Selecione uma tarefa acima para ver sugestões de encaixe.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- ABA: Métricas & Gráficos -->
+            <div id="tab-metrics" class="tab-content">
+                <section class="sidebar-column" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%;">
+                    <!-- Gráfico de Alocação de Tempo -->
+                    <div class="glass-panel metrics-panel">
+                        <div class="panel-header">
+                            <i data-lucide="pie-chart" class="text-primary"></i>
+                            <h2>Alocação de Tempo</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="timeAllocationChart"></canvas>
+                        </div>
+                        <div id="chart-legend" class="chart-legend"></div>
+                    </div>
+
+                    <!-- Gráfico de Prioridades de Tarefas -->
+                    <div class="glass-panel metrics-panel">
+                        <div class="panel-header">
+                            <i data-lucide="bar-chart-horizontal" class="text-success"></i>
+                            <h2>Prioridades das Tarefas</h2>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="taskPriorityChart"></canvas>
+                        </div>
+                        <div id="priority-chart-legend" class="chart-legend"></div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ABA: Ajustes & Segurança -->
+            <div id="tab-settings" class="tab-content">
+                <section class="sidebar-column" style="width: 100%; max-width: 600px; margin: 0 auto;">
                     <!-- Configurações de Segurança e Backup -->
                     <div class="glass-panel backup-panel">
                         <div class="panel-header">
@@ -559,6 +604,13 @@
                         <option value="dom">Domingo</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="task-progress" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <span>Progresso da Tarefa</span>
+                        <span id="task-progress-val" style="font-weight: 700; color: var(--accent);">0%</span>
+                    </label>
+                    <input type="range" id="task-progress" class="form-range" min="0" max="100" step="5" value="0" oninput="document.getElementById('task-progress-val').textContent = this.value + '%'; if(document.getElementById('lock-screen-overlay') && window.innerWidth <= 768) { /* just helper */ }">
+                </div>
                 <div class="modal-actions">
                     <button type="button" id="btn-delete-task" class="btn-danger hidden">Excluir Tarefa</button>
                     <div class="flex-end">
@@ -580,13 +632,17 @@
             <i data-lucide="check-square"></i>
             <span>Tarefas</span>
         </button>
+        <button class="bottom-nav-link" id="btn-nav-timer" onclick="switchMainTab('tab-timer')">
+            <i data-lucide="timer"></i>
+            <span>Foco</span>
+        </button>
         <button class="bottom-nav-link" id="btn-nav-finances" onclick="switchMainTab('tab-finances')">
             <i data-lucide="wallet"></i>
             <span>Finanças</span>
         </button>
-        <button class="bottom-nav-link" id="btn-nav-metrics" onclick="switchMainTab('tab-metrics')">
-            <i data-lucide="sparkles"></i>
-            <span>Smart Fit</span>
+        <button class="bottom-nav-link" id="btn-nav-more" onclick="toggleDrawer(true)">
+            <i data-lucide="menu"></i>
+            <span>Mais</span>
         </button>
     </nav>
 

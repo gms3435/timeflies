@@ -710,6 +710,8 @@ function renderTasks() {
         // Priority tag name in Portuguese
         const priorityLabels = { low: 'Baixa', medium: 'Média', high: 'Alta' };
         
+        const taskProgress = task.progress !== undefined ? task.progress : (task.completed ? 100 : 0);
+        
         taskCard.innerHTML = `
             <div class="task-header">
                 <button class="btn-checkbox" onclick="toggleTaskCompletion('${task.id}', event)">
@@ -727,6 +729,12 @@ function renderTasks() {
                         <i data-lucide="trash-2" style="width:14px; height:14px;"></i>
                     </button>
                 </div>
+            </div>
+            <div class="task-progress-wrapper" onclick="openTaskModal('${task.id}')" style="cursor: pointer; margin-left: 32px;">
+                <div class="task-progress-bar">
+                    <div class="task-progress-fill" style="width: ${taskProgress}%"></div>
+                </div>
+                <span class="task-progress-text">${taskProgress}% concluído</span>
             </div>
             <div class="task-meta" onclick="openTaskModal('${task.id}')">
                 <span class="meta-tag tag-duration">
@@ -1276,12 +1284,20 @@ function openTaskModal(id = null, event = null) {
             elements.taskDeadline.value = task.deadline || '';
             elements.taskDeadlineTime.value = task.deadlineTime || '';
             elements.taskDay.value = task.day || '';
+            
+            const progress = task.progress !== undefined ? task.progress : (task.completed ? 100 : 0);
+            document.getElementById('task-progress').value = progress;
+            document.getElementById('task-progress-val').textContent = progress + '%';
+            
             elements.btnDeleteTask.classList.remove('hidden');
             elements.taskModalTitle.textContent = 'Editar Tarefa';
         }
     } else {
         const defaultDay = (state.currentDayFilter !== 'all' && state.currentDayFilter !== 'none') ? state.currentDayFilter : '';
         elements.taskDay.value = defaultDay;
+        
+        document.getElementById('task-progress').value = 0;
+        document.getElementById('task-progress-val').textContent = '0%';
         
         // Pré-preenche a data limite com o dia atual (fuso local do celular)
         const now = new Date();
@@ -1321,13 +1337,16 @@ function saveTask() {
         return;
     }
 
+    const progress = parseInt(document.getElementById('task-progress').value) || 0;
+    const completed = progress === 100;
+
     if (id) {
         // Edit existing
         const index = state.tasks.findIndex(t => t.id === id);
         if (index !== -1) {
             state.tasks[index] = { 
                 ...state.tasks[index], 
-                title, desc, category, priority, duration, deadline, deadlineTime, day 
+                title, desc, category, priority, duration, deadline, deadlineTime, day, progress, completed 
             };
         }
     } else {
@@ -1342,7 +1361,8 @@ function saveTask() {
             deadline,
             deadlineTime,
             day,
-            completed: false,
+            progress,
+            completed,
             scheduledTime: null
         };
         state.tasks.push(newTask);
@@ -1370,6 +1390,7 @@ window.toggleTaskCompletion = function(id, event) {
     const task = state.tasks.find(t => t.id === id);
     if (task) {
         task.completed = !task.completed;
+        task.progress = task.completed ? 100 : 0;
         saveData();
         renderAll();
     }
@@ -1389,6 +1410,23 @@ window.openTaskModal = openTaskModal;
 window.openBlockModal = openBlockModal;
 window.applySuggestion = applySuggestion;
 
+window.toggleDrawer = function(show) {
+    const drawer = document.getElementById('app-drawer');
+    if (!drawer) return;
+    if (show) {
+        drawer.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    } else {
+        drawer.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+};
+
+window.selectDrawerTab = function(tabId) {
+    toggleDrawer(false);
+    switchMainTab(tabId);
+};
+
 window.switchMainTab = function(tabId) {
     // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -1397,6 +1435,11 @@ window.switchMainTab = function(tabId) {
     
     // Deactivate all tab links
     document.querySelectorAll('.app-tab-link').forEach(link => {
+        link.classList.remove('active');
+    });
+
+    // Deactivate all drawer links
+    document.querySelectorAll('.drawer-link').forEach(link => {
         link.classList.remove('active');
     });
     
@@ -1415,6 +1458,12 @@ window.switchMainTab = function(tabId) {
     const targetLink = document.querySelector(`.app-tab-link[onclick*="${tabId}"]`);
     if (targetLink) {
         targetLink.classList.add('active');
+    }
+
+    // Activate target drawer link
+    const targetDrawerLink = document.querySelector(`.drawer-link[onclick*="${tabId}"]`);
+    if (targetDrawerLink) {
+        targetDrawerLink.classList.add('active');
     }
     
     // Activate target bottom nav link (mobile)
@@ -1912,6 +1961,8 @@ function renderPrioritiesGrid() {
                 moveDownBtn = `<button class="btn-priority-move" onclick="changeTaskPriority('${task.id}', 'medium')" title="Descer para Média"><i data-lucide="chevron-right" style="width:14px; height:14px;"></i></button>`;
             }
 
+            const taskProgress = task.progress !== undefined ? task.progress : (task.completed ? 100 : 0);
+
             card.innerHTML = `
                 <div class="task-header" style="padding: 0; border: none; background: transparent; box-shadow: none;">
                     <button class="btn-checkbox" onclick="toggleTaskCompletion('${task.id}', event)">
@@ -1920,6 +1971,12 @@ function renderPrioritiesGrid() {
                     <div class="task-info" onclick="openTaskModal('${task.id}')" style="cursor: pointer;">
                         <span class="priority-task-title">${task.title}</span>
                     </div>
+                </div>
+                <div class="task-progress-wrapper" onclick="openTaskModal('${task.id}')" style="cursor: pointer; margin-left: 24px; margin-top: -2px;">
+                    <div class="task-progress-bar">
+                        <div class="task-progress-fill" style="width: ${taskProgress}%"></div>
+                    </div>
+                    <span class="task-progress-text" style="min-width: 32px;">${taskProgress}%</span>
                 </div>
                 <div class="priority-task-meta">
                     <span class="meta-tag tag-duration"><i data-lucide="hourglass"></i> ${formatMinutesDuration(task.duration)}</span>
