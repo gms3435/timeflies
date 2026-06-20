@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;600;700&display=swap" rel="stylesheet">
 
     <!-- CSS do App -->
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=8">
 
     <!-- Diagnóstico de Erros JS (inline, sem custo de rede) -->
     <script>
@@ -141,6 +141,9 @@
                 </button>
                 <button class="drawer-link" onclick="selectDrawerTab('tab-tarefas')">
                     <i data-lucide="check-square"></i> <span>Minhas Tarefas</span>
+                </button>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-projects')">
+                    <i data-lucide="folder-kanban"></i> <span>Projetos & Estudos</span>
                 </button>
                 <button class="drawer-link" onclick="selectDrawerTab('tab-timer')">
                     <i data-lucide="timer"></i> <span>Timer de Foco</span>
@@ -271,61 +274,258 @@
                 </section>
             </div>
             
-            <!-- ABA 3: Minhas Finanças -->
-            <div id="tab-finances" class="tab-content">
+            <!-- ABA: Projetos & Estudos -->
+            <div id="tab-projects" class="tab-content">
                 <section class="tasks-column" style="height: 100%;">
                     <div class="glass-panel tasks-panel">
                         <div class="panel-header space-between">
                             <div class="title-with-icon">
-                                <i data-lucide="wallet" class="text-accent"></i>
-                                <h2>Anotador Financeiro Rápido</h2>
+                                <i data-lucide="folder-kanban" class="text-primary"></i>
+                                <h2>Disciplinas & Projetos</h2>
                             </div>
                             <div class="flex-end" style="gap: 8px;">
-                                <button class="btn-danger" id="btn-clear-finances" onclick="clearAllExpenses()" style="padding: 10px 16px;">
-                                    <i data-lucide="trash-2"></i> Limpar Enviados
+                                <button class="btn-primary" onclick="openProjectModal()">
+                                    <i data-lucide="plus"></i> Novo Projeto / Disciplina
                                 </button>
-                                <button class="btn-primary" onclick="openExpenseModal()">
+                            </div>
+                        </div>
+
+                        <!-- Resumo Acadêmico -->
+                        <div class="academic-summary-bar" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; width: 100%;">
+                            <div class="stat-card" style="flex: 1; min-width: 150px; align-items: flex-start; padding: 12px 16px;">
+                                <span class="stat-label">Disciplinas Restantes</span>
+                                <span class="stat-value text-success" id="academic-remaining">5</span>
+                            </div>
+                            <div class="stat-card" style="flex: 1; min-width: 150px; align-items: flex-start; padding: 12px 16px;">
+                                <span class="stat-label">Média Geral (GPA)</span>
+                                <span class="stat-value" id="academic-gpa" style="color: var(--accent);">0.00</span>
+                            </div>
+                            <div class="stat-card" style="flex: 1; min-width: 150px; align-items: flex-start; padding: 12px 16px;">
+                                <span class="stat-label">Horas de Estudo (Total)</span>
+                                <span class="stat-value" id="academic-total-hours">0.0h</span>
+                            </div>
+                        </div>
+
+                        <!-- Grid de Projetos -->
+                        <div class="tasks-scroll-container" style="margin-top: 16px; overflow-y: auto;">
+                            <div class="projects-grid-container" id="projects-grid-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; width: 100%;">
+                                <!-- Inserido dinamicamente via JS -->
+                            </div>
+                            <div id="projects-empty-msg" class="placeholder-msg">
+                                <i data-lucide="folder-open"></i>
+                                Nenhum projeto ou disciplina cadastrada. Clique no botão acima para adicionar!
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ABA 3: Controle Financeiro Completo -->
+            <div id="tab-finances" class="tab-content">
+                <section class="tasks-column" style="height: 100%;">
+                    <div class="glass-panel tasks-panel" style="display: flex; flex-direction: column; height: 100%;">
+                        <div class="panel-header space-between" style="border-bottom: none; padding-bottom: 0;">
+                            <div class="title-with-icon">
+                                <i data-lucide="wallet" class="text-accent"></i>
+                                <h2>Controle Financeiro</h2>
+                            </div>
+                            <div class="flex-end" style="gap: 8px;">
+                                <button class="btn-secondary" onclick="openCreditCardSettingsModal()" title="Configurações de Cartão" style="padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
+                                    <i data-lucide="credit-card" style="width: 16px; height: 16px;"></i> Ajustar Limite
+                                </button>
+                                <button class="btn-primary" onclick="openFinanceTransactionModal()">
                                     <i data-lucide="plus"></i> Novo Lançamento
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Resumo Financeiro Local -->
-                        <div class="quick-stats" style="margin-top: 8px; justify-content: flex-start; width: 100%; gap: 16px;">
-                            <div class="stat-card" style="flex: 1; min-width: 130px; align-items: flex-start; padding: 10px 16px;">
-                                <span class="stat-label">Total À Vista</span>
-                                <span class="stat-value text-success" id="finance-total-cash">R$ 0,00</span>
-                            </div>
-                            <div class="stat-card" style="flex: 1; min-width: 130px; align-items: flex-start; padding: 10px 16px;">
-                                <span class="stat-label">Total Cartão</span>
-                                <span class="stat-value" id="finance-total-card" style="color: var(--accent);">R$ 0,00</span>
-                            </div>
-                            <div class="stat-card" style="flex: 1; min-width: 130px; align-items: flex-start; padding: 10px 16px;">
-                                <span class="stat-label">Total Geral</span>
-                                <span class="stat-value" id="finance-total-all">R$ 0,00</span>
+                        <!-- Sub-abas do Controle Financeiro -->
+                        <div class="finance-sub-tabs" style="display: flex; gap: 6px; margin: 12px 0 16px 0; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; overflow-x: auto; width: 100%;">
+                            <button class="sub-tab-btn active" onclick="switchFinanceSubTab('dashboard')">Dashboard</button>
+                            <button class="sub-tab-btn" onclick="switchFinanceSubTab('cash')">Gastos à Vista</button>
+                            <button class="sub-tab-btn" onclick="switchFinanceSubTab('card')">Cartão de Crédito</button>
+                            <button class="sub-tab-btn" onclick="switchFinanceSubTab('income')">Receitas</button>
+                            <button class="sub-tab-btn" onclick="switchFinanceSubTab('fixed')">Despesas Fixas</button>
+                        </div>
+
+                        <!-- Filtro de Mês Referência para todo o financeiro -->
+                        <div class="finance-month-filter" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 8px 16px; border-radius: var(--border-radius-md); width: 100%;">
+                            <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Mês de Referência:</div>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <button type="button" class="btn-icon btn-sm" onclick="adjustFinanceMonth(-1)" style="width: 32px; height: 32px; padding: 0;"><i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i></button>
+                                <span id="finance-current-month-label" style="font-weight: 700; font-size: 0.95rem; min-width: 100px; text-align: center;">Junho/2026</span>
+                                <button type="button" class="btn-icon btn-sm" onclick="adjustFinanceMonth(1)" style="width: 32px; height: 32px; padding: 0;"><i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i></button>
                             </div>
                         </div>
 
-                        <div class="tasks-scroll-container" style="margin-top: 8px; overflow-y: auto;">
+                        <!-- SUB-ABA 1: Dashboard -->
+                        <div id="finance-subtab-dashboard" class="finance-subtab-content active" style="flex: 1; overflow-y: auto; padding-right: 4px;">
+                            <!-- Métricas Rápidas -->
+                            <div class="quick-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; width: 100%;">
+                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Receitas Totais</span>
+                                    <span class="stat-value text-success" id="fin-dash-income">R$ 0,00</span>
+                                </div>
+                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Despesas Fixas</span>
+                                    <span class="stat-value" id="fin-dash-fixed" style="color: var(--warning);">R$ 0,00</span>
+                                </div>
+                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Gastos À Vista</span>
+                                    <span class="stat-value" id="fin-dash-cash" style="color: var(--text-muted);">R$ 0,00</span>
+                                </div>
+                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Fatura do Cartão</span>
+                                    <span class="stat-value" id="fin-dash-card" style="color: var(--accent);">R$ 0,00</span>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;" class="finance-dash-grid">
+                                <!-- Previsão de Saldo Card -->
+                                <div class="glass-panel" style="padding: 16px; gap: 8px; box-shadow: none; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.02);">
+                                    <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Previsão de Saldo Final</h4>
+                                    <div style="font-size: 1.8rem; font-weight: 800; margin: 8px 0;" id="fin-dash-forecast">R$ 0,00</div>
+                                    <p class="panel-desc" style="margin: 0; font-size: 0.75rem;" id="fin-dash-forecast-desc">Sobra projetada após todas as receitas e despesas.</p>
+                                </div>
+
+                                <!-- Uso de Limite do Cartão Card -->
+                                <div class="glass-panel" style="padding: 16px; gap: 8px; box-shadow: none; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.02);">
+                                    <div class="space-between" style="width: 100%;">
+                                        <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Uso do Limite do Cartão</h4>
+                                        <span style="font-size: 0.75rem; color: var(--text-muted);" id="fin-dash-limit-label">R$ 0,00 / R$ 0,00</span>
+                                    </div>
+                                    <div class="task-progress-bar" style="height: 12px; margin-top: 12px; background: rgba(255,255,255,0.05);">
+                                        <div class="task-progress-fill" id="fin-dash-limit-progress" style="width: 0%; background: linear-gradient(90deg, var(--accent) 0%, var(--danger) 100%);"></div>
+                                    </div>
+                                    <div class="space-between" style="width: 100%; font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">
+                                        <span id="fin-dash-limit-percent">0% utilizado</span>
+                                        <span id="fin-dash-limit-remaining">R$ 0,00 disponível</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Gráfico de Gastos por Categoria -->
+                            <div class="glass-panel" style="padding: 16px; min-height: 220px; box-shadow: none; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.02);">
+                                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Distribuição de Gastos da Referência</h4>
+                                <div class="chart-container" style="max-height: 150px;">
+                                    <canvas id="financeCategoryChart"></canvas>
+                                </div>
+                                <div id="finance-category-legend" class="chart-legend" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- SUB-ABA 2: Gastos à Vista -->
+                        <div id="finance-subtab-cash" class="finance-subtab-content style-scroll" style="flex: 1; overflow-y: auto; display: none; padding-right: 4px;">
                             <div class="finance-list-wrapper" style="width: 100%;">
                                 <table class="finance-table" style="width: 100%; border-collapse: collapse; text-align: left;">
                                     <thead>
                                         <tr style="border-bottom: 2px solid rgba(255,255,255,0.08); font-size: 0.8rem; color: var(--text-muted);">
                                             <th style="padding: 10px;">Data</th>
                                             <th style="padding: 10px;">Categoria</th>
-                                            <th style="padding: 10px;">Método</th>
-                                            <th style="padding: 10px; text-align: right;">Valor</th>
                                             <th style="padding: 10px;">Observação</th>
+                                            <th style="padding: 10px; text-align: right;">Valor</th>
                                             <th style="padding: 10px; text-align: center; width: 50px;">Ação</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="finance-tbody">
-                                        <!-- Transações inseridas dinamicamente via JS -->
+                                    <tbody id="finance-cash-tbody">
+                                        <!-- Transações dinâmicas -->
                                     </tbody>
                                 </table>
-                                <div id="finance-empty-msg" class="placeholder-msg">
+                                <div id="finance-cash-empty" class="placeholder-msg">
                                     <i data-lucide="receipt"></i>
-                                    Nenhum gasto registrado. Use o botão acima para lançar!
+                                    Nenhum gasto à vista registrado neste mês.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SUB-ABA 3: Cartão de Crédito -->
+                        <div id="finance-subtab-card" class="finance-subtab-content style-scroll" style="flex: 1; overflow-y: auto; display: none; padding-right: 4px;">
+                            <!-- Resumo da fatura do mês -->
+                            <div class="fatura-info-panel" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 12px 16px; border-radius: var(--border-radius-md); margin-bottom: 12px; width: 100%;">
+                                <div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Total da Fatura Atual</div>
+                                    <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent);" id="finance-fatura-total">R$ 0,00</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 0.7rem; color: var(--text-muted);">Fechamento: <span id="fatura-closing-lbl">05</span> | Vencimento: <span id="fatura-due-lbl">12</span></div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;" id="finance-fatura-status">Fatura Aberta</div>
+                                </div>
+                            </div>
+
+                            <div class="finance-list-wrapper" style="width: 100%;">
+                                <table class="finance-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <thead>
+                                        <tr style="border-bottom: 2px solid rgba(255,255,255,0.08); font-size: 0.8rem; color: var(--text-muted);">
+                                            <th style="padding: 10px;">Data Compra</th>
+                                            <th style="padding: 10px;">Categoria</th>
+                                            <th style="padding: 10px;">Observação</th>
+                                            <th style="padding: 10px; text-align: center;">Parcela</th>
+                                            <th style="padding: 10px; text-align: right;">Valor</th>
+                                            <th style="padding: 10px; text-align: center; width: 50px;">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="finance-card-tbody">
+                                        <!-- Transações dinâmicas -->
+                                    </tbody>
+                                </table>
+                                <div id="finance-card-empty" class="placeholder-msg">
+                                    <i data-lucide="credit-card"></i>
+                                    Nenhuma compra no cartão para esta fatura.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SUB-ABA 4: Receitas -->
+                        <div id="finance-subtab-income" class="finance-subtab-content style-scroll" style="flex: 1; overflow-y: auto; display: none; padding-right: 4px;">
+                            <div class="finance-list-wrapper" style="width: 100%;">
+                                <table class="finance-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <thead>
+                                        <tr style="border-bottom: 2px solid rgba(255,255,255,0.08); font-size: 0.8rem; color: var(--text-muted);">
+                                            <th style="padding: 10px;">Data</th>
+                                            <th style="padding: 10px;">Categoria</th>
+                                            <th style="padding: 10px;">Origem / Detalhe</th>
+                                            <th style="padding: 10px; text-align: right;">Valor</th>
+                                            <th style="padding: 10px; text-align: center; width: 50px;">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="finance-income-tbody">
+                                        <!-- Transações dinâmicas -->
+                                    </tbody>
+                                </table>
+                                <div id="finance-income-empty" class="placeholder-msg">
+                                    <i data-lucide="trending-up"></i>
+                                    Nenhuma receita cadastrada neste mês.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SUB-ABA 5: Despesas Fixas -->
+                        <div id="finance-subtab-fixed" class="finance-subtab-content style-scroll" style="flex: 1; overflow-y: auto; display: none; padding-right: 4px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; width: 100%;">
+                                <div style="font-size: 0.75rem; color: var(--text-muted);" id="fixed-paid-count">0 de 0 pagas</div>
+                                <button type="button" class="btn-secondary btn-sm" onclick="openFixedExpenseModal()" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; height: auto;">
+                                    <i data-lucide="plus" style="width: 12px; height: 12px;"></i> Nova Despesa Fixa
+                                </button>
+                            </div>
+
+                            <div class="finance-list-wrapper" style="width: 100%;">
+                                <table class="finance-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <thead>
+                                        <tr style="border-bottom: 2px solid rgba(255,255,255,0.08); font-size: 0.8rem; color: var(--text-muted);">
+                                            <th style="padding: 10px; text-align: center; width: 40px;">Pago</th>
+                                            <th style="padding: 10px;">Despesa</th>
+                                            <th style="padding: 10px; text-align: center;">Vence Dia</th>
+                                            <th style="padding: 10px; text-align: right;">Valor</th>
+                                            <th style="padding: 10px; text-align: center; width: 50px;">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="finance-fixed-tbody">
+                                        <!-- Transações dinâmicas -->
+                                    </tbody>
+                                </table>
+                                <div id="finance-fixed-empty" class="placeholder-msg">
+                                    <i data-lucide="shield-alert"></i>
+                                    Nenhuma despesa fixa cadastrada.
                                 </div>
                             </div>
                         </div>
@@ -566,6 +766,12 @@
                         </select>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label for="task-project-id">Vincular ao Projeto / Disciplina (Opcional)</label>
+                    <select id="task-project-id" class="form-control">
+                        <option value="">Nenhum projeto vinculado</option>
+                    </select>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="task-duration">Duração Estimada</label>
@@ -663,66 +869,233 @@
         </button>
     </div>
 
-    <!-- MODAL: Adicionar Nova Despesa (Finanças) -->
-    <div id="modal-expense" class="modal-overlay">
+    <!-- MODAL: Adicionar/Editar Projeto/Disciplina -->
+    <div id="modal-project" class="modal-overlay">
         <div class="modal-content glass-card">
             <div class="bottom-sheet-grabber"></div>
             <div class="modal-header">
-                <h3>Novo Lançamento Financeiro</h3>
-                <button type="button" class="btn-close-modal" onclick="closeExpenseModal()"><i data-lucide="x"></i></button>
+                <h3 id="project-modal-title">Novo Projeto / Disciplina</h3>
+                <button type="button" class="btn-close-modal" onclick="closeProjectModal()"><i data-lucide="x"></i></button>
             </div>
-            <form id="expense-form" onsubmit="saveExpense(event)">
+            <form id="project-form" onsubmit="saveProject(event)">
+                <input type="hidden" id="project-id">
+                <div class="form-group">
+                    <label for="project-name">Nome da Disciplina / Projeto</label>
+                    <input type="text" id="project-name" class="form-control" placeholder="Ex: TCC, Ciência dos Polímeros, Mecânica dos Sólidos" required>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="expense-date">Data da Compra</label>
-                        <input type="date" id="expense-date" class="form-control" required>
+                        <label for="project-code">Código (Opcional)</label>
+                        <input type="text" id="project-code" class="form-control" placeholder="Ex: MAT123">
                     </div>
                     <div class="form-group">
-                        <label for="expense-amount">Valor (R$)</label>
-                        <input type="number" id="expense-amount" class="form-control" placeholder="0,00" step="0.01" min="0.01" required>
+                        <label for="project-professor">Professor (Opcional)</label>
+                        <input type="text" id="project-professor" class="form-control" placeholder="Ex: Dr. Carlos">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="project-type">Tipo de Projeto</label>
+                        <select id="project-type" class="form-control" required>
+                            <option value="disciplina" selected>Disciplina Obrigatória</option>
+                            <option value="tcc">TCC / Monografia</option>
+                            <option value="curso">Curso Extra</option>
+                            <option value="projeto">Projeto Pessoal / Geral</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="project-status">Status</label>
+                        <select id="project-status" class="form-control" required>
+                            <option value="andamento" selected>Em Andamento</option>
+                            <option value="planejado">Planejado</option>
+                            <option value="concluido">Concluído</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="project-study-goal">Meta de Estudos Semanal (Horas)</label>
+                        <input type="number" id="project-study-goal" class="form-control" placeholder="Ex: 4" min="0" value="4">
+                    </div>
+                    <div class="form-group">
+                        <label for="project-grade">Média / Nota Final (Se concluído)</label>
+                        <input type="number" id="project-grade" class="form-control" placeholder="Ex: 8.5" step="0.1" min="0" max="10">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Forma de Pagamento</label>
-                    <div class="payment-options" style="display: flex; gap: 12px; margin-top: 4px;">
-                        <label class="payment-radio" style="flex: 1; text-align: center; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--border-radius-md); padding: 12px; cursor: pointer; display: block; transition: var(--transition-fast);">
-                            <input type="radio" name="expense-method" value="cash" checked style="display: none;">
-                            <span class="payment-radio-label" style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted);">À Vista</span>
+                    <label for="project-desc">Descrição / Ementa / Anotações (Opcional)</label>
+                    <textarea id="project-desc" class="form-control" rows="2" placeholder="Tópicos principais, links de referência..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="btn-delete-project" class="btn-danger hidden" onclick="deleteProject()">Excluir Projeto</button>
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeProjectModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar Projeto</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Adicionar Lançamento Financeiro (Receitas, À Vista, Cartão) -->
+    <div id="modal-finance-transaction" class="modal-overlay">
+        <div class="modal-content glass-card">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3 id="finance-transaction-modal-title">Novo Lançamento Financeiro</h3>
+                <button type="button" class="btn-close-modal" onclick="closeFinanceTransactionModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="finance-transaction-form" onsubmit="saveFinanceTransaction(event)">
+                <input type="hidden" id="fin-trans-id">
+                
+                <!-- Tipo de Transação -->
+                <div class="form-group">
+                    <label>Tipo de Lançamento</label>
+                    <div style="display: flex; gap: 8px; margin-top: 4px;">
+                        <label class="payment-radio" style="flex: 1; text-align: center; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--border-radius-md); padding: 10px; cursor: pointer; display: block; transition: var(--transition-fast);" id="lbl-type-cash">
+                            <input type="radio" name="fin-trans-type" value="cash" checked onchange="toggleFinanceTransactionTypeFields()" style="display: none;">
+                            <span class="payment-radio-label" style="font-weight: 700; font-size: 0.8rem; color: var(--text-main);">Gasto À Vista</span>
                         </label>
-                        <label class="payment-radio" style="flex: 1; text-align: center; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--border-radius-md); padding: 12px; cursor: pointer; display: block; transition: var(--transition-fast);">
-                            <input type="radio" name="expense-method" value="card" style="display: none;">
-                            <span class="payment-radio-label" style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted);">Cartão de Crédito</span>
+                        <label class="payment-radio" style="flex: 1; text-align: center; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--border-radius-md); padding: 10px; cursor: pointer; display: block; transition: var(--transition-fast);" id="lbl-type-card">
+                            <input type="radio" name="fin-trans-type" value="card" onchange="toggleFinanceTransactionTypeFields()" style="display: none;">
+                            <span class="payment-radio-label" style="font-weight: 700; font-size: 0.8rem; color: var(--text-muted);">Cartão de Crédito</span>
+                        </label>
+                        <label class="payment-radio" style="flex: 1; text-align: center; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--border-radius-md); padding: 10px; cursor: pointer; display: block; transition: var(--transition-fast);" id="lbl-type-income">
+                            <input type="radio" name="fin-trans-type" value="income" onchange="toggleFinanceTransactionTypeFields()" style="display: none;">
+                            <span class="payment-radio-label" style="font-weight: 700; font-size: 0.8rem; color: var(--text-muted);">Receita</span>
                         </label>
                     </div>
                 </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fin-trans-date">Data da Transação</label>
+                        <input type="date" id="fin-trans-date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fin-trans-amount">Valor (R$)</label>
+                        <input type="number" id="fin-trans-amount" class="form-control" placeholder="0,00" step="0.01" min="0.01" required>
+                    </div>
+                </div>
+
+                <!-- Categoria (Muda de acordo com tipo) -->
                 <div class="form-group">
-                    <label for="expense-category">Categoria do Gasto</label>
-                    <select id="expense-category" class="form-control" required>
-                        <option value="alimentacao">Alimentação</option>
-                        <option value="bem_duravel">Bem durável</option>
-                        <option value="filhos">Filhos</option>
-                        <option value="ensino">Ensino</option>
-                        <option value="gasto_terceiro">Gasto de Terceiro</option>
-                        <option value="glp">GLP</option>
-                        <option value="lazer">Lazer</option>
-                        <option value="mercado">Mercado</option>
-                        <option value="obra">Obra</option>
-                        <option value="pet">Pet</option>
-                        <option value="roupa">Roupa</option>
-                        <option value="saude">Saúde</option>
-                        <option value="servico">Serviço</option>
-                        <option value="taxa">Taxa</option>
-                        <option value="transporte">Transporte</option>
+                    <label for="fin-trans-category">Categoria</label>
+                    <select id="fin-trans-category" class="form-control" required>
+                        <!-- Inserido dinamicamente de acordo com o tipo -->
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="expense-desc">Observação / Detalhe (Opcional)</label>
-                    <input type="text" id="expense-desc" class="form-control" placeholder="Ex: Almoço de domingo, Abastecimento Fiat, etc.">
+
+                <!-- Campos Exclusivos para Cartão de Crédito -->
+                <div class="form-row" id="card-fields-row" style="display: none;">
+                    <div class="form-group">
+                        <label for="fin-trans-card">Selecione o Cartão</label>
+                        <select id="fin-trans-card" class="form-control">
+                            <option value="default">Cartão Principal</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fin-trans-installments">Parcelas</label>
+                        <select id="fin-trans-installments" class="form-control">
+                            <option value="1" selected>1x (Sem parcelamento)</option>
+                            <option value="2">2x</option>
+                            <option value="3">3x</option>
+                            <option value="4">4x</option>
+                            <option value="5">5x</option>
+                            <option value="6">6x</option>
+                            <option value="8">8x</option>
+                            <option value="10">10x</option>
+                            <option value="12">12x</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="modal-actions" style="margin-top: 24px;">
+
+                <div class="form-group">
+                    <label for="fin-trans-desc">Observação / Descrição (Opcional)</label>
+                    <input type="text" id="fin-trans-desc" class="form-control" placeholder="Ex: Mercado mensal, Salário da empresa, etc.">
+                </div>
+
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button type="button" id="btn-delete-finance-transaction" class="btn-danger hidden" onclick="deleteFinanceTransaction()">Excluir Lançamento</button>
                     <div class="flex-end">
-                        <button type="button" class="btn-secondary" onclick="closeExpenseModal()">Cancelar</button>
+                        <button type="button" class="btn-secondary" onclick="closeFinanceTransactionModal()">Cancelar</button>
                         <button type="submit" class="btn-accent">Salvar Lançamento</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Adicionar/Editar Despesa Fixa -->
+    <div id="modal-fixed-expense" class="modal-overlay">
+        <div class="modal-content glass-card">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3 id="fixed-expense-modal-title">Nova Despesa Fixa</h3>
+                <button type="button" class="btn-close-modal" onclick="closeFixedExpenseModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="fixed-expense-form" onsubmit="saveFixedExpense(event)">
+                <input type="hidden" id="fixed-expense-id">
+                <div class="form-group">
+                    <label for="fixed-expense-name">Nome da Despesa Fixa</label>
+                    <input type="text" id="fixed-expense-name" class="form-control" placeholder="Ex: Aluguel, Internet Fibra, Energia Celpe" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fixed-expense-amount">Valor Mensal (R$)</label>
+                        <input type="number" id="fixed-expense-amount" class="form-control" placeholder="0,00" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fixed-expense-due-day">Dia de Vencimento</label>
+                        <input type="number" id="fixed-expense-due-day" class="form-control" placeholder="Ex: 10" min="1" max="31" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="fixed-expense-desc">Observação (Opcional)</label>
+                    <input type="text" id="fixed-expense-desc" class="form-control" placeholder="Ex: Dividido com companheiro de quarto">
+                </div>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button type="button" id="btn-delete-fixed-expense" class="btn-danger hidden" onclick="deleteFixedExpense()">Excluir</button>
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeFixedExpenseModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar Despesa</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Ajustar Cartão de Crédito -->
+    <div id="modal-credit-card-settings" class="modal-overlay">
+        <div class="modal-content glass-card">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3>Configurações do Cartão Principal</h3>
+                <button type="button" class="btn-close-modal" onclick="closeCreditCardSettingsModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="credit-card-settings-form" onsubmit="saveCreditCardSettings(event)">
+                <div class="form-group">
+                    <label for="card-settings-name">Nome do Cartão</label>
+                    <input type="text" id="card-settings-name" class="form-control" placeholder="Ex: Cartão Principal" required value="Cartão Principal">
+                </div>
+                <div class="form-group">
+                    <label for="card-settings-limit">Limite Total (R$)</label>
+                    <input type="number" id="card-settings-limit" class="form-control" placeholder="3000.00" step="0.01" min="1" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="card-settings-closing-day">Dia do Fechamento</label>
+                        <input type="number" id="card-settings-closing-day" class="form-control" placeholder="5" min="1" max="31" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="card-settings-due-day">Dia do Vencimento</label>
+                        <input type="number" id="card-settings-due-day" class="form-control" placeholder="12" min="1" max="31" required>
+                    </div>
+                </div>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeCreditCardSettingsModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar Ajustes</button>
                     </div>
                 </div>
             </form>
@@ -756,7 +1129,7 @@
     <!-- Chart.js: versão pinada + bundle minificado -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
     <!-- App -->
-    <script src="app.js?v=6" defer></script>
+    <script src="app.js?v=8" defer></script>
     <!-- Service Worker: cache offline -->
     <script>
         if ('serviceWorker' in navigator) {

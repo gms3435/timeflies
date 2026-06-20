@@ -11,20 +11,155 @@ const currentDayIndex = new Date().getDay();
 let state = {
     blocks: [],
     tasks: [],
+    projects: [], // Novo
+    finances: {
+        expenses: [],
+        incomes: [],
+        fixedExpenses: [],
+        cardSettings: { limit: 3000, closingDay: 5, dueDay: 12, name: 'Cartão Principal' }
+    }, // Reestruturado
     currentFilter: 'all',
     currentDayFilter: 'all', // 'all', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom', 'none'
     currentDay: DAY_KEYS[currentDayIndex],
     theme: 'dark',
     taskView: 'list', // 'list' ou 'priorities'
-    alarmsActive: true
+    alarmsActive: true,
+    currentFinanceMonth: new Date().toISOString().substring(0, 7), // Novo: YYYY-MM
+    currentFinanceSubTab: 'dashboard' // Novo: 'dashboard', 'cash', 'card', 'income', 'fixed'
 };
 
 // CHART VARIABLES
 let timeChart = null;
 let priorityChart = null;
+let financeCategoryChart = null; // Novo
 
 // NOTIFIED BLOCKS TODAY (evita re-disparos no mesmo minuto)
 let notifiedBlocksToday = [];
+
+// Função de Migração de Dados
+function migrateFinanceAndProjectData() {
+    // 1. Migrar finanças se estiver no formato antigo (array)
+    if (Array.isArray(state.finances)) {
+        const oldExpenses = state.finances;
+        state.finances = {
+            expenses: [],
+            incomes: [],
+            fixedExpenses: [],
+            cardSettings: {
+                limit: 3000,
+                closingDay: 5,
+                dueDay: 12,
+                name: 'Cartão Principal'
+            }
+        };
+        oldExpenses.forEach(oldExp => {
+            state.finances.expenses.push({
+                id: oldExp.id || 'e_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                date: oldExp.date,
+                amount: oldExp.amount,
+                method: oldExp.method || 'cash',
+                category: oldExp.category || 'outros',
+                desc: oldExp.desc || '',
+                installments: 1,
+                currentInstallment: 1
+            });
+        });
+    } else if (!state.finances || typeof state.finances !== 'object') {
+        state.finances = {
+            expenses: [],
+            incomes: [],
+            fixedExpenses: [],
+            cardSettings: {
+                limit: 3000,
+                closingDay: 5,
+                dueDay: 12,
+                name: 'Cartão Principal'
+            }
+        };
+    } else {
+        // Garantir que todas as propriedades existam
+        if (!state.finances.expenses) state.finances.expenses = [];
+        if (!state.finances.incomes) state.finances.incomes = [];
+        if (!state.finances.fixedExpenses) state.finances.fixedExpenses = [];
+        if (!state.finances.cardSettings) {
+            state.finances.cardSettings = {
+                limit: 3000,
+                closingDay: 5,
+                dueDay: 12,
+                name: 'Cartão Principal'
+            };
+        }
+    }
+
+    // 2. Garantir inicialização de projetos (Semeando os 5 cursos restantes se estiver vazio)
+    if (!state.projects || state.projects.length === 0) {
+        state.projects = [
+            {
+                id: 'p_tcc',
+                name: 'TCC - Engenharia de Materiais',
+                code: 'EMA-TCC',
+                professor: 'Dr. Orientador Silva',
+                type: 'tcc',
+                status: 'andamento',
+                studyGoal: 8,
+                grade: null,
+                desc: 'Desenvolvimento e escrita do Trabalho de Conclusão do Curso de Engenharia de Materiais.'
+            },
+            {
+                id: 'p_selemats',
+                name: 'Seleção de Materiais',
+                code: 'EMA-SEL',
+                professor: 'Prof. Souza',
+                type: 'disciplina',
+                status: 'andamento',
+                studyGoal: 4,
+                grade: null,
+                desc: 'Critérios e metodologias para seleção de materiais em engenharia.'
+            },
+            {
+                id: 'p_caracterizacao',
+                name: 'Caracterização de Materiais',
+                code: 'EMA-CAR',
+                professor: 'Profª. Costa',
+                type: 'disciplina',
+                status: 'planejado',
+                studyGoal: 4,
+                grade: null,
+                desc: 'Técnicas de análise microestrutural, difração de raios-X e ensaios mecânicos.'
+            },
+            {
+                id: 'p_metalurgia',
+                name: 'Metalurgia Física',
+                code: 'EMA-MET',
+                professor: 'Prof. Oliveira',
+                type: 'disciplina',
+                status: 'planejado',
+                studyGoal: 4,
+                grade: null,
+                desc: 'Estruturas cristalinas, transformações de fase e tratamentos térmicos em metais.'
+            },
+            {
+                id: 'p_polimeros',
+                name: 'Processamento de Polímeros',
+                code: 'EMA-POL',
+                professor: 'Profª. Lima',
+                type: 'disciplina',
+                status: 'planejado',
+                studyGoal: 4,
+                grade: null,
+                desc: 'Extrusão, injeção e conformação de polímeros termoplásticos e termofixos.'
+            }
+        ];
+    }
+
+    // 3. Garantir meses e sub-abas financeiras no estado
+    if (!state.currentFinanceMonth) {
+        state.currentFinanceMonth = new Date().toISOString().substring(0, 7);
+    }
+    if (!state.currentFinanceSubTab) {
+        state.currentFinanceSubTab = 'dashboard';
+    }
+}
 
 // UI ELEMENTS
 const elements = {
@@ -38,6 +173,11 @@ const elements = {
     // Modals
     modalBlock: document.getElementById('modal-block'),
     modalTask: document.getElementById('modal-task'),
+    modalProject: document.getElementById('modal-project'), // Novo
+    modalFinanceTransaction: document.getElementById('modal-finance-transaction'), // Novo
+    modalFixedExpense: document.getElementById('modal-fixed-expense'), // Novo
+    modalCreditCardSettings: document.getElementById('modal-credit-card-settings'), // Novo
+    
     blockModalTitle: document.getElementById('block-modal-title'),
     taskModalTitle: document.getElementById('task-modal-title'),
     
@@ -154,7 +294,8 @@ function saveData() {
             const payload = {
                 blocks: state.blocks,
                 tasks: state.tasks,
-                finances: state.finances || [],
+                projects: state.projects || [],
+                finances: state.finances || {},
                 taskView: state.taskView,
                 alarmsActive: state.alarmsActive
             };
@@ -166,7 +307,8 @@ function saveData() {
             // Salva sem criptografia se não tiver senha
             localStorage.setItem('tempus_blocks', JSON.stringify(state.blocks));
             localStorage.setItem('tempus_tasks', JSON.stringify(state.tasks));
-            localStorage.setItem('tempus_finances', JSON.stringify(state.finances || []));
+            localStorage.setItem('tempus_projects', JSON.stringify(state.projects || []));
+            localStorage.setItem('tempus_finances', JSON.stringify(state.finances || {}));
             localStorage.setItem('tempus_alarms', state.alarmsActive);
             localStorage.setItem('tempus_view', state.taskView);
         }
@@ -182,25 +324,35 @@ function unlockAndInitializeApp(password, isFirstCreation = false) {
     
     if (isFirstCreation) {
         // Se é a primeira vez, migra dados não criptografados caso existam
-        let savedBlocks, savedTasks, savedFinances, savedAlarms, savedView;
+        let savedBlocks, savedTasks, savedFinances, savedAlarms, savedView, savedProjects;
         try {
             savedBlocks = localStorage.getItem('tempus_blocks');
             savedTasks = localStorage.getItem('tempus_tasks');
             savedFinances = localStorage.getItem('tempus_finances');
+            savedProjects = localStorage.getItem('tempus_projects');
             savedAlarms = localStorage.getItem('tempus_alarms');
             savedView = localStorage.getItem('tempus_view');
         } catch (e) {}
         
         state.blocks = savedBlocks ? JSON.parse(savedBlocks) : DEFAULT_BLOCKS;
         state.tasks = savedTasks ? JSON.parse(savedTasks) : DEFAULT_TASKS;
-        state.finances = savedFinances ? JSON.parse(savedFinances) : [];
+        state.projects = savedProjects ? JSON.parse(savedProjects) : [];
+        try {
+            state.finances = savedFinances ? JSON.parse(savedFinances) : {};
+        } catch (e) {
+            state.finances = {};
+        }
         state.alarmsActive = savedAlarms !== 'false';
         state.taskView = savedView === 'priorities' ? 'priorities' : 'list';
+        
+        // Executa migração se necessário
+        migrateFinanceAndProjectData();
         
         // Remove chaves antigas por segurança
         try {
             localStorage.removeItem('tempus_blocks');
             localStorage.removeItem('tempus_tasks');
+            localStorage.removeItem('tempus_projects');
             localStorage.removeItem('tempus_finances');
             localStorage.removeItem('tempus_alarms');
             localStorage.removeItem('tempus_view');
@@ -226,9 +378,13 @@ function unlockAndInitializeApp(password, isFirstCreation = false) {
                 
                 state.blocks = parsed.blocks || [];
                 state.tasks = parsed.tasks || [];
-                state.finances = parsed.finances || [];
+                state.projects = parsed.projects || [];
+                state.finances = parsed.finances || {};
                 state.taskView = parsed.taskView || 'list';
                 state.alarmsActive = parsed.alarmsActive !== false;
+                
+                // Executa migração
+                migrateFinanceAndProjectData();
             } catch (e) {
                 console.error("Erro na descriptografia:", e);
                 return false; // Senha incorreta ou dados corrompidos
@@ -237,7 +393,13 @@ function unlockAndInitializeApp(password, isFirstCreation = false) {
             // Inicializa dados vazios
             state.blocks = DEFAULT_BLOCKS;
             state.tasks = DEFAULT_TASKS;
-            state.finances = [];
+            state.projects = [];
+            state.finances = {
+                expenses: [],
+                incomes: [],
+                fixedExpenses: [],
+                cardSettings: { limit: 3000, closingDay: 5, dueDay: 12, name: 'Cartão Principal' }
+            };
             state.taskView = 'list';
             state.alarmsActive = true;
             saveData();
@@ -611,6 +773,7 @@ function renderAll() {
     renderCharts();
     renderAssistantDropdown();
     renderTimerTaskDropdown();
+    renderProjects(); // Renderiza projetos e estudos
     renderFinances(); // Renderiza lançamentos financeiros locais
     updateAlarmsButtonUI();
     safeCreateIcons();
@@ -751,6 +914,11 @@ function renderTasks() {
                 ${task.deadline ? `
                     <span class="meta-tag tag-deadline">
                         <i data-lucide="clock"></i> Até ${formatDeadline(task.deadline, task.deadlineTime)}
+                    </span>
+                ` : ''}
+                ${task.projectId ? `
+                    <span class="meta-tag tag-project-name">
+                        <i data-lucide="folder"></i> ${getProjectName(task.projectId)}
                     </span>
                 ` : ''}
             </div>
@@ -906,7 +1074,13 @@ function renderCharts() {
     
     const slots = calculateTimeSlots();
     const isDark = state.theme === 'dark';
-    const textColor = isDark ? '#94a3b8' : '#64748b';
+    
+    // Retrieve colors dynamically from computed CSS variables
+    const rootStyles = window.getComputedStyle(document.documentElement);
+    const getThemeColor = (varName) => rootStyles.getPropertyValue(varName).trim();
+    
+    const textColor = getThemeColor('--text-muted') || (isDark ? '#94a3b8' : '#64748b');
+    const panelBgColor = getThemeColor('--panel-bg') || (isDark ? '#16110e' : '#ffffff');
     
     // --- 1. GRÁFICO DE ALOCAÇÃO DE TEMPO ---
     let stats = {
@@ -934,11 +1108,11 @@ function renderCharts() {
     ];
 
     const chartColors = [
-        '#a855f7', // Faculdade (Purple)
-        '#06b6d4', // Trabalho (Cyan)
-        '#f59e0b', // Casa (Amber)
-        '#f43f5e', // Busy (Rose)
-        '#10b981'  // Free (Emerald)
+        getThemeColor('--color-faculdade') || '#a855f7',
+        getThemeColor('--color-trabalho') || '#06b6d4',
+        getThemeColor('--color-casa') || '#f59e0b',
+        getThemeColor('--color-busy') || '#f43f5e',
+        getThemeColor('--color-free') || '#10b981'
     ];
 
     // Render Legend Text
@@ -964,6 +1138,8 @@ function renderCharts() {
 
     if (timeChart) {
         timeChart.data.datasets[0].data = dataValues;
+        timeChart.data.datasets[0].backgroundColor = chartColors;
+        timeChart.data.datasets[0].borderColor = panelBgColor;
         timeChart.options.plugins.legend.labels.color = textColor;
         timeChart.update();
     } else {
@@ -975,9 +1151,9 @@ function renderCharts() {
                 datasets: [{
                     data: dataValues,
                     backgroundColor: chartColors,
-                    borderWidth: isDark ? 2 : 1,
-                    borderColor: isDark ? '#0f172a' : '#ffffff',
-                    hoverOffset: 4
+                    borderWidth: 0,
+                    borderColor: panelBgColor,
+                    hoverOffset: 6
                 }]
             },
             options: {
@@ -988,6 +1164,13 @@ function renderCharts() {
                         display: false // We use our own custom Legend DOM element
                     },
                     tooltip: {
+                        backgroundColor: isDark ? 'hsl(18, 20%, 9%)' : 'hsl(0, 0%, 100%)',
+                        titleColor: isDark ? 'hsl(18, 25%, 92%)' : 'hsl(0, 10%, 15%)',
+                        bodyColor: isDark ? 'hsl(18, 15%, 70%)' : 'hsl(0, 5%, 45%)',
+                        borderColor: getThemeColor('--panel-border') || 'transparent',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: true,
                         callbacks: {
                             label: function(context) {
                                 return ` ${context.label}: ${context.raw.toFixed(1)}h`;
@@ -995,7 +1178,7 @@ function renderCharts() {
                         }
                     }
                 },
-                cutout: '70%'
+                cutout: '82%'
             }
         });
     }
@@ -1020,9 +1203,9 @@ function renderCharts() {
     ];
 
     const priorityChartColors = [
-        '#ef4444', // Alta (Red)
-        '#f59e0b', // Média (Amber)
-        '#10b981'  // Baixa (Emerald)
+        getThemeColor('--danger') || '#ef4444', // Alta (Red)
+        getThemeColor('--warning') || '#f59e0b', // Média (Amber)
+        getThemeColor('--color-free') || '#10b981'  // Baixa (Emerald)
     ];
 
     const priorityLabels = ['Alta', 'Média', 'Baixa'];
@@ -1050,6 +1233,8 @@ function renderCharts() {
 
     if (priorityChart) {
         priorityChart.data.datasets[0].data = priorityValues;
+        priorityChart.data.datasets[0].backgroundColor = priorityChartColors;
+        priorityChart.data.datasets[0].borderColor = panelBgColor;
         priorityChart.options.plugins.legend.labels.color = textColor;
         priorityChart.update();
     } else {
@@ -1061,9 +1246,9 @@ function renderCharts() {
                 datasets: [{
                     data: priorityValues,
                     backgroundColor: priorityChartColors,
-                    borderWidth: isDark ? 2 : 1,
-                    borderColor: isDark ? '#0f172a' : '#ffffff',
-                    hoverOffset: 4
+                    borderWidth: 0,
+                    borderColor: panelBgColor,
+                    hoverOffset: 6
                 }]
             },
             options: {
@@ -1074,6 +1259,13 @@ function renderCharts() {
                         display: false
                     },
                     tooltip: {
+                        backgroundColor: isDark ? 'hsl(18, 20%, 9%)' : 'hsl(0, 0%, 100%)',
+                        titleColor: isDark ? 'hsl(18, 25%, 92%)' : 'hsl(0, 10%, 15%)',
+                        bodyColor: isDark ? 'hsl(18, 15%, 70%)' : 'hsl(0, 5%, 45%)',
+                        borderColor: getThemeColor('--panel-border') || 'transparent',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: true,
                         callbacks: {
                             label: function(context) {
                                 return ` ${context.label}: ${context.raw} ${context.raw === 1 ? 'tarefa' : 'tarefas'}`;
@@ -1081,7 +1273,7 @@ function renderCharts() {
                         }
                     }
                 },
-                cutout: '70%'
+                cutout: '82%'
             }
         });
     }
@@ -1090,15 +1282,24 @@ function renderCharts() {
 function updateChartTheme() {
     if (typeof Chart !== 'undefined') {
         const isDark = state.theme === 'dark';
+        const rootStyles = window.getComputedStyle(document.documentElement);
+        const getThemeColor = (varName) => rootStyles.getPropertyValue(varName).trim();
+        const panelBgColor = getThemeColor('--panel-bg') || (isDark ? '#16110e' : '#ffffff');
+        
         if (timeChart) {
-            timeChart.data.datasets[0].borderColor = isDark ? '#0f172a' : '#ffffff';
-            timeChart.data.datasets[0].borderWidth = isDark ? 2 : 1;
+            timeChart.data.datasets[0].borderColor = panelBgColor;
+            timeChart.data.datasets[0].borderWidth = 0;
             timeChart.update();
         }
         if (priorityChart) {
-            priorityChart.data.datasets[0].borderColor = isDark ? '#0f172a' : '#ffffff';
-            priorityChart.data.datasets[0].borderWidth = isDark ? 2 : 1;
+            priorityChart.data.datasets[0].borderColor = panelBgColor;
+            priorityChart.data.datasets[0].borderWidth = 0;
             priorityChart.update();
+        }
+        if (financeCategoryChart) {
+            financeCategoryChart.data.datasets[0].borderColor = panelBgColor;
+            financeCategoryChart.data.datasets[0].borderWidth = 0;
+            financeCategoryChart.update();
         }
         renderCharts();
     }
@@ -1267,6 +1468,18 @@ function deleteBlock() {
 function openTaskModal(id = null, event = null) {
     if (event) event.stopPropagation();
     
+    // Atualizar dropdown de projetos no modal de tarefas
+    const projectSelect = document.getElementById('task-project-id');
+    if (projectSelect) {
+        projectSelect.innerHTML = '<option value="">Nenhum projeto vinculado</option>';
+        (state.projects || []).forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name;
+            projectSelect.appendChild(opt);
+        });
+    }
+
     elements.taskForm.reset();
     elements.taskId.value = '';
     elements.btnDeleteTask.classList.add('hidden');
@@ -1285,6 +1498,10 @@ function openTaskModal(id = null, event = null) {
             elements.taskDeadlineTime.value = task.deadlineTime || '';
             elements.taskDay.value = task.day || '';
             
+            if (projectSelect) {
+                projectSelect.value = task.projectId || '';
+            }
+            
             const progress = task.progress !== undefined ? task.progress : (task.completed ? 100 : 0);
             document.getElementById('task-progress').value = progress;
             document.getElementById('task-progress-val').textContent = progress + '%';
@@ -1298,6 +1515,10 @@ function openTaskModal(id = null, event = null) {
         
         document.getElementById('task-progress').value = 0;
         document.getElementById('task-progress-val').textContent = '0%';
+        
+        if (projectSelect) {
+            projectSelect.value = '';
+        }
         
         // Pré-preenche a data limite com o dia atual (fuso local do celular)
         const now = new Date();
@@ -1321,6 +1542,7 @@ function saveTask() {
     const deadline = elements.taskDeadline.value;
     const deadlineTime = elements.taskDeadlineTime.value;
     const day = elements.taskDay.value;
+    const projectId = document.getElementById('task-project-id') ? document.getElementById('task-project-id').value : null;
 
     if (!title) {
         alert('Por favor, informe o título da tarefa.');
@@ -1346,7 +1568,8 @@ function saveTask() {
         if (index !== -1) {
             state.tasks[index] = { 
                 ...state.tasks[index], 
-                title, desc, category, priority, duration, deadline, deadlineTime, day, progress, completed 
+                title, desc, category, priority, duration, deadline, deadlineTime, day, progress, completed,
+                projectId: projectId || null
             };
         }
     } else {
@@ -1363,7 +1586,8 @@ function saveTask() {
             day,
             progress,
             completed,
-            scheduledTime: null
+            scheduledTime: null,
+            projectId: projectId || null
         };
         state.tasks.push(newTask);
     }
@@ -1982,6 +2206,7 @@ function renderPrioritiesGrid() {
                     <span class="meta-tag tag-duration"><i data-lucide="hourglass"></i> ${formatMinutesDuration(task.duration)}</span>
                     <span class="meta-tag tag-category" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; color: var(--text-muted);">${categoriesLabels[task.category]}</span>
                     ${task.day ? `<span class="meta-tag tag-day"><i data-lucide="calendar"></i> ${dayLabels[task.day]}</span>` : ''}
+                    ${task.projectId ? `<span class="meta-tag tag-project-name"><i data-lucide="folder" style="width:10px; height:10px; margin-right:2px;"></i> ${getProjectName(task.projectId)}</span>` : ''}
                 </div>
                 <div class="priority-task-actions">
                     <button class="btn-priority-move" onclick="openTaskModal('${task.id}', event)" title="Editar"><i data-lucide="edit-3" style="width:12px; height:12px;"></i></button>
@@ -2301,12 +2526,1252 @@ function changeAccessPassword() {
     alert("Senha de acesso alterada com sucesso!");
 }
 
-// Expor novas ações financeiras e de segurança na janela
-window.openExpenseModal = openExpenseModal;
-window.closeExpenseModal = closeExpenseModal;
-window.saveExpense = saveExpense;
-window.clearAllExpenses = clearAllExpenses;
-window.deleteExpense = deleteExpense;
+// ============================================================
+// GESTÃO DE PROJETOS E ESTUDOS
+// ============================================================
+function openProjectModal(projectId = null) {
+    const modal = document.getElementById('modal-project');
+    if (!modal) return;
+    
+    document.getElementById('project-form').reset();
+    document.getElementById('project-id').value = '';
+    document.getElementById('btn-delete-project').classList.add('hidden');
+    document.getElementById('project-modal-title').textContent = 'Novo Projeto / Disciplina';
+    
+    if (projectId) {
+        const proj = state.projects.find(p => p.id === projectId);
+        if (proj) {
+            document.getElementById('project-id').value = proj.id;
+            document.getElementById('project-name').value = proj.name;
+            document.getElementById('project-code').value = proj.code || '';
+            document.getElementById('project-professor').value = proj.professor || '';
+            document.getElementById('project-type').value = proj.type || 'disciplina';
+            document.getElementById('project-status').value = proj.status || 'andamento';
+            document.getElementById('project-study-goal').value = proj.studyGoal !== undefined ? proj.studyGoal : 4;
+            document.getElementById('project-grade').value = proj.grade !== undefined ? proj.grade : '';
+            document.getElementById('project-desc').value = proj.desc || '';
+            
+            document.getElementById('btn-delete-project').classList.remove('hidden');
+            document.getElementById('project-modal-title').textContent = 'Editar Projeto / Disciplina';
+        }
+    }
+    
+    modal.classList.add('active');
+}
+
+function closeProjectModal() {
+    const modal = document.getElementById('modal-project');
+    if (modal) modal.classList.remove('active');
+}
+
+function saveProject(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('project-id').value;
+    const name = document.getElementById('project-name').value.trim();
+    const code = document.getElementById('project-code').value.trim();
+    const professor = document.getElementById('project-professor').value.trim();
+    const type = document.getElementById('project-type').value;
+    const status = document.getElementById('project-status').value;
+    const studyGoal = parseInt(document.getElementById('project-study-goal').value) || 0;
+    const gradeVal = document.getElementById('project-grade').value;
+    const grade = gradeVal !== '' ? parseFloat(gradeVal) : null;
+    const desc = document.getElementById('project-desc').value.trim();
+    
+    if (!name) {
+        alert('Por favor, informe o nome do projeto.');
+        return;
+    }
+    
+    if (id) {
+        const index = state.projects.findIndex(p => p.id === id);
+        if (index !== -1) {
+            state.projects[index] = {
+                ...state.projects[index],
+                name, code, professor, type, status, studyGoal, grade, desc
+            };
+        }
+    } else {
+        const newProj = {
+            id: 'p_' + Date.now(),
+            name, code, professor, type, status, studyGoal, grade, desc
+        };
+        state.projects.push(newProj);
+    }
+    
+    saveData();
+    closeProjectModal();
+    renderAll();
+}
+
+function deleteProject() {
+    const id = document.getElementById('project-id').value;
+    if (!id) return;
+    
+    if (confirm('Deseja realmente excluir este projeto? As tarefas vinculadas a ele continuarão existindo, mas sem o vínculo.')) {
+        state.projects = state.projects.filter(p => p.id !== id);
+        // Desvincular tarefas
+        state.tasks.forEach(t => {
+            if (t.projectId === id) {
+                t.projectId = null;
+            }
+        });
+        saveData();
+        closeProjectModal();
+        renderAll();
+    }
+}
+
+function getProjectName(projectId) {
+    if (!projectId) return '';
+    const proj = state.projects.find(p => p.id === projectId);
+    return proj ? proj.name : '';
+}
+
+function renderProjects() {
+    const container = document.getElementById('projects-grid-container');
+    const emptyMsg = document.getElementById('projects-empty-msg');
+    
+    const remCountEl = document.getElementById('academic-remaining');
+    const gpaEl = document.getElementById('academic-gpa');
+    const hoursEl = document.getElementById('academic-total-hours');
+    
+    if (!container) return;
+    container.innerHTML = '';
+    
+    const projects = state.projects || [];
+    
+    if (projects.length === 0) {
+        if (emptyMsg) emptyMsg.classList.remove('hidden');
+        if (remCountEl) remCountEl.textContent = '0';
+        if (gpaEl) gpaEl.textContent = '0.00';
+        if (hoursEl) hoursEl.textContent = '0.0h';
+        return;
+    }
+    
+    if (emptyMsg) emptyMsg.classList.add('hidden');
+    
+    let totalStudyMinutes = 0;
+    
+    // Sort projects: andamento first, then planejado, then concluído
+    const statusWeight = { andamento: 3, planejado: 2, concluido: 1 };
+    projects.sort((a, b) => statusWeight[b.status] - statusWeight[a.status]);
+    
+    projects.forEach(p => {
+        const card = document.createElement('div');
+        card.className = `project-card border-${p.status}`;
+        
+        // Find tasks linked to this project
+        const projTasks = state.tasks.filter(t => t.projectId === p.id);
+        const totalTasks = projTasks.length;
+        const completedTasks = projTasks.filter(t => t.completed).length;
+        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        
+        // Cumulative study minutes from tasks
+        const studyMins = projTasks.filter(t => t.completed).reduce((acc, t) => acc + t.duration, 0);
+        totalStudyMinutes += studyMins;
+        const studyHrs = (studyMins / 60).toFixed(1);
+        
+        const typeLabels = {
+            disciplina: 'Disciplina',
+            tcc: 'TCC / Monografia',
+            curso: 'Curso Extra',
+            projeto: 'Projeto'
+        };
+        const statusLabels = {
+            andamento: 'Em Andamento',
+            planejado: 'Planejado',
+            concluido: 'Concluído'
+        };
+        
+        // Render subtask previews (up to 3 pending ones)
+        let subtasksHtml = '';
+        const pendingSub = projTasks.filter(t => !t.completed).slice(0, 3);
+        if (pendingSub.length > 0) {
+            subtasksHtml = `
+                <div class="project-tasks-list">
+                    ${pendingSub.map(t => `
+                        <div class="project-task-row">
+                            <i data-lucide="square" style="width:12px; height:12px; opacity:0.6;"></i>
+                            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${t.title}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else if (totalTasks > 0 && completedTasks === totalTasks) {
+            subtasksHtml = `
+                <div style="font-size:0.75rem; color:var(--success); font-style:italic; margin-top:8px; display:flex; align-items:center; gap:4px;">
+                    <i data-lucide="check-circle" style="width:12px; height:12px;"></i> Todas as tarefas concluídas!
+                </div>
+            `;
+        }
+        
+        card.innerHTML = `
+            <div class="project-header" style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+                <div style="max-width: 70%;">
+                    <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-main); margin:0;">${p.name}</h3>
+                    ${p.code ? `<span style="font-size:0.7rem; color:var(--text-muted);">${p.code} ${p.professor ? `• Prof. ${p.professor}` : ''}</span>` : ''}
+                </div>
+                <span class="project-type-badge type-${p.type}">${typeLabels[p.type] || p.type}</span>
+            </div>
+            
+            <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; color:var(--text-muted);">
+                <span class="project-status-dot status-${p.status}"></span>
+                <span>${statusLabels[p.status] || p.status}</span>
+                ${p.grade !== null && p.grade !== undefined ? `<span style="margin-left:auto; font-weight:700; color:var(--success);">Nota: ${p.grade.toFixed(1)}</span>` : ''}
+            </div>
+            
+            <div class="project-progress-container" style="margin-top:4px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">
+                    <span>Tarefas</span>
+                    <span>${completedTasks}/${totalTasks} (${progress}%)</span>
+                </div>
+                <div class="task-progress-bar" style="height:6px; background:rgba(255,255,255,0.05);">
+                    <div class="task-progress-fill" style="width: ${progress}%; background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);"></div>
+                </div>
+            </div>
+            
+            <div class="project-stats-mini" style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
+                <span>Meta Semanal: ${p.studyGoal || 0}h</span>
+                <span>Horas de Estudo: <strong>${studyHrs}h</strong></span>
+            </div>
+            
+            ${subtasksHtml}
+            
+            <div class="project-card-actions">
+                <button type="button" class="btn-secondary btn-sm" onclick="openProjectModal('${p.id}')" style="padding:4px 8px; font-size:0.7rem; display:flex; align-items:center; gap:4px;">
+                    <i data-lucide="edit-3" style="width:12px; height:12px;"></i> Editar
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(card);
+    });
+    
+    // Compute academics KPIs
+    const remDisciplines = projects.filter(p => p.status !== 'concluido' && p.type === 'disciplina').length;
+    if (remCountEl) remCountEl.textContent = remDisciplines;
+    
+    const gradedProjects = projects.filter(p => p.status === 'concluido' && p.grade !== null && p.grade !== undefined && p.grade !== '');
+    const gpa = gradedProjects.length > 0 ? (gradedProjects.reduce((acc, p) => acc + parseFloat(p.grade), 0) / gradedProjects.length).toFixed(2) : '0.00';
+    if (gpaEl) gpaEl.textContent = gpa;
+    
+    if (hoursEl) hoursEl.textContent = `${(totalStudyMinutes / 60).toFixed(1)}h`;
+    
+    safeCreateIcons();
+}
+
+// ============================================================
+// CONTROLE FINANCEIRO COMPLETO (MODELO PLANILHA EXCEL)
+// ============================================================
+
+// Alternar entre as sub-abas financeiras
+function switchFinanceSubTab(subTabId) {
+    state.currentFinanceSubTab = subTabId;
+    
+    // Atualizar classe ativa dos botões
+    const subTabButtons = document.querySelectorAll('.sub-tab-btn');
+    subTabButtons.forEach(btn => {
+        const onClickText = btn.getAttribute('onclick') || '';
+        if (onClickText.includes(subTabId)) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // Mostrar container correto
+    const contents = document.querySelectorAll('.finance-subtab-content');
+    contents.forEach(div => {
+        if (div.id === `finance-subtab-${subTabId}`) {
+            div.style.display = 'block';
+        } else {
+            div.style.display = 'none';
+        }
+    });
+    
+    renderFinances();
+}
+
+// Ajustar mês de referência
+function adjustFinanceMonth(dir) {
+    const [year, month] = state.currentFinanceMonth.split('-').map(Number);
+    const date = new Date(year, month - 1 + dir, 1);
+    
+    const yyyy = date.getFullYear();
+    const mm = (date.getMonth() + 1).toString().padStart(2, '0');
+    state.currentFinanceMonth = `${yyyy}-${mm}`;
+    
+    renderFinances();
+}
+
+// Formatar rótulo do mês
+function getFinanceMonthLabel(monthStr) {
+    const [year, month] = monthStr.split('-');
+    const monthsNames = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    return `${monthsNames[parseInt(month) - 1]}/${year}`;
+}
+
+// Modal Lançamento Financeiro
+function openFinanceTransactionModal(id = null) {
+    const modal = document.getElementById('modal-finance-transaction');
+    if (!modal) return;
+    
+    document.getElementById('finance-transaction-form').reset();
+    document.getElementById('fin-trans-id').value = '';
+    document.getElementById('btn-delete-finance-transaction').classList.add('hidden');
+    document.getElementById('finance-transaction-modal-title').textContent = 'Novo Lançamento Financeiro';
+    
+    // Configurar data de hoje padrão
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+    const dd = now.getDate().toString().padStart(2, '0');
+    document.getElementById('fin-trans-date').value = `${yyyy}-${mm}-${dd}`;
+    
+    if (id) {
+        // Encontra transação em expenses ou incomes
+        let trans = (state.finances.expenses || []).find(e => e.id === id);
+        let type = 'cash';
+        
+        if (trans) {
+            type = trans.method === 'card' ? 'card' : 'cash';
+        } else {
+            trans = (state.finances.incomes || []).find(i => i.id === id);
+            if (trans) type = 'income';
+        }
+        
+        if (trans) {
+            document.getElementById('fin-trans-id').value = trans.id;
+            document.getElementById('fin-trans-date').value = trans.date;
+            document.getElementById('fin-trans-amount').value = trans.amount;
+            document.getElementById('fin-trans-desc').value = trans.desc || '';
+            
+            // Set radio button checked
+            const typeRadio = document.querySelector(`input[name="fin-trans-type"][value="${type}"]`);
+            if (typeRadio) {
+                typeRadio.checked = true;
+                toggleFinanceTransactionTypeFields();
+            }
+            
+            if (type === 'card') {
+                document.getElementById('fin-trans-card').value = trans.cardId || 'default';
+                document.getElementById('fin-trans-installments').value = trans.installments || 1;
+            }
+            
+            // Wait a tiny moment to let toggleFinanceTransactionTypeFields run, then set category
+            setTimeout(() => {
+                document.getElementById('fin-trans-category').value = trans.category;
+            }, 10);
+            
+            document.getElementById('btn-delete-finance-transaction').classList.remove('hidden');
+            document.getElementById('finance-transaction-modal-title').textContent = 'Editar Lançamento';
+        }
+    } else {
+        // Se criar novo, define tipo baseado na aba atual
+        let defaultType = 'cash';
+        if (state.currentFinanceSubTab === 'card') defaultType = 'card';
+        if (state.currentFinanceSubTab === 'income') defaultType = 'income';
+        
+        const typeRadio = document.querySelector(`input[name="fin-trans-type"][value="${defaultType}"]`);
+        if (typeRadio) {
+            typeRadio.checked = true;
+            toggleFinanceTransactionTypeFields();
+        }
+    }
+    
+    modal.classList.add('active');
+}
+
+function closeFinanceTransactionModal() {
+    const modal = document.getElementById('modal-finance-transaction');
+    if (modal) modal.classList.remove('active');
+}
+
+// Alternar campos do modal dependendo do tipo de transação (Cartão/À Vista/Receita)
+function toggleFinanceTransactionTypeFields() {
+    const type = document.querySelector('input[name="fin-trans-type"]:checked').value;
+    
+    // Labels CSS active state helper
+    const lblCash = document.getElementById('lbl-type-cash');
+    const lblCard = document.getElementById('lbl-type-card');
+    const lblIncome = document.getElementById('lbl-type-income');
+    
+    if (lblCash) lblCash.style.borderColor = type === 'cash' ? 'var(--primary)' : 'rgba(255,255,255,0.08)';
+    if (lblCard) lblCard.style.borderColor = type === 'card' ? 'var(--accent)' : 'rgba(255,255,255,0.08)';
+    if (lblIncome) lblIncome.style.borderColor = type === 'income' ? 'var(--success)' : 'rgba(255,255,255,0.08)';
+    
+    if (lblCash) lblCash.querySelector('.payment-radio-label').style.color = type === 'cash' ? 'var(--text-main)' : 'var(--text-muted)';
+    if (lblCard) lblCard.querySelector('.payment-radio-label').style.color = type === 'card' ? 'var(--text-main)' : 'var(--text-muted)';
+    if (lblIncome) lblIncome.querySelector('.payment-radio-label').style.color = type === 'income' ? 'var(--text-main)' : 'var(--text-muted)';
+
+    const cardFields = document.getElementById('card-fields-row');
+    if (cardFields) {
+        cardFields.style.display = type === 'card' ? 'flex' : 'none';
+    }
+    
+    // Categorias correspondentes
+    const catSelect = document.getElementById('fin-trans-category');
+    if (!catSelect) return;
+    
+    catSelect.innerHTML = '';
+    
+    if (type === 'income') {
+        const incomeCats = {
+            salario: 'Salário',
+            bolsa: 'Bolsa de Estudos',
+            freelance: 'Freelance',
+            rendimentos: 'Rendimentos',
+            outros: 'Outros'
+        };
+        Object.entries(incomeCats).forEach(([val, lbl]) => {
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = lbl;
+            catSelect.appendChild(opt);
+        });
+    } else {
+        const expenseCats = {
+            alimentacao: 'Alimentação',
+            bem_duravel: 'Bem durável',
+            filhos: 'Filhos',
+            ensino: 'Ensino',
+            gasto_terceiro: 'Gasto de Terceiro',
+            glp: 'GLP',
+            lazer: 'Lazer',
+            mercado: 'Mercado',
+            obra: 'Obra',
+            pet: 'Pet',
+            roupa: 'Roupa',
+            saude: 'Saúde',
+            servico: 'Serviço',
+            taxa: 'Taxa',
+            transporte: 'Transporte',
+            outros: 'Outros'
+        };
+        Object.entries(expenseCats).forEach(([val, lbl]) => {
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = lbl;
+            catSelect.appendChild(opt);
+        });
+    }
+}
+
+// Salvar Lançamento Financeiro
+function saveFinanceTransaction(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('fin-trans-id').value;
+    const type = document.querySelector('input[name="fin-trans-type"]:checked').value;
+    const date = document.getElementById('fin-trans-date').value;
+    const amount = parseFloat(document.getElementById('fin-trans-amount').value);
+    const category = document.getElementById('fin-trans-category').value;
+    const desc = document.getElementById('fin-trans-desc').value.trim();
+    
+    if (!date || isNaN(amount) || amount <= 0) {
+        alert('Por favor, informe a data e valor corretos.');
+        return;
+    }
+    
+    if (id) {
+        // Excluir anterior do local correto e reinserir atualizado (simplifica a edição de tipo)
+        state.finances.expenses = (state.finances.expenses || []).filter(e => e.id !== id);
+        state.finances.incomes = (state.finances.incomes || []).filter(i => i.id !== id);
+    }
+    
+    const transId = id || 'e_' + Date.now();
+    
+    if (type === 'income') {
+        const newIncome = {
+            id: transId,
+            date,
+            amount,
+            category,
+            desc
+        };
+        state.finances.incomes.unshift(newIncome);
+    } else {
+        const method = type === 'card' ? 'card' : 'cash';
+        const cardId = type === 'card' ? document.getElementById('fin-trans-card').value : null;
+        const installments = type === 'card' ? parseInt(document.getElementById('fin-trans-installments').value) || 1 : 1;
+        
+        const newExpense = {
+            id: transId,
+            date,
+            amount,
+            method,
+            category,
+            desc,
+            cardId,
+            installments,
+            currentInstallment: 1
+        };
+        state.finances.expenses.unshift(newExpense);
+    }
+    
+    saveData();
+    closeFinanceTransactionModal();
+    renderAll();
+}
+
+function deleteFinanceTransaction() {
+    const id = document.getElementById('fin-trans-id').value;
+    if (!id) return;
+    
+    if (confirm('Deseja realmente excluir este lançamento financeiro?')) {
+        state.finances.expenses = (state.finances.expenses || []).filter(e => e.id !== id);
+        state.finances.incomes = (state.finances.incomes || []).filter(i => i.id !== id);
+        saveData();
+        closeFinanceTransactionModal();
+        renderAll();
+    }
+}
+
+function deleteFinanceTransactionDirect(id, event) {
+    if (event) event.stopPropagation();
+    if (confirm('Deseja realmente excluir este lançamento financeiro?')) {
+        state.finances.expenses = (state.finances.expenses || []).filter(e => e.id !== id);
+        state.finances.incomes = (state.finances.incomes || []).filter(i => i.id !== id);
+        saveData();
+        renderAll();
+    }
+}
+
+// Modal Despesas Fixas
+function openFixedExpenseModal(id = null) {
+    const modal = document.getElementById('modal-fixed-expense');
+    if (!modal) return;
+    
+    document.getElementById('fixed-expense-form').reset();
+    document.getElementById('fixed-expense-id').value = '';
+    document.getElementById('btn-delete-fixed-expense').classList.add('hidden');
+    document.getElementById('fixed-expense-modal-title').textContent = 'Nova Despesa Fixa';
+    
+    if (id) {
+        const item = (state.finances.fixedExpenses || []).find(f => f.id === id);
+        if (item) {
+            document.getElementById('fixed-expense-id').value = item.id;
+            document.getElementById('fixed-expense-name').value = item.title;
+            document.getElementById('fixed-expense-amount').value = item.amount;
+            document.getElementById('fixed-expense-due-day').value = item.dueDay;
+            document.getElementById('fixed-expense-desc').value = item.desc || '';
+            
+            document.getElementById('btn-delete-fixed-expense').classList.remove('hidden');
+            document.getElementById('fixed-expense-modal-title').textContent = 'Editar Despesa Fixa';
+        }
+    }
+    
+    modal.classList.add('active');
+}
+
+function closeFixedExpenseModal() {
+    const modal = document.getElementById('modal-fixed-expense');
+    if (modal) modal.classList.remove('active');
+}
+
+function saveFixedExpense(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('fixed-expense-id').value;
+    const title = document.getElementById('fixed-expense-name').value.trim();
+    const amount = parseFloat(document.getElementById('fixed-expense-amount').value);
+    const dueDay = parseInt(document.getElementById('fixed-expense-due-day').value);
+    const desc = document.getElementById('fixed-expense-desc').value.trim();
+    
+    if (!title || isNaN(amount) || amount <= 0 || isNaN(dueDay)) {
+        alert('Por favor, preencha todos os campos obrigatórios.');
+        return;
+    }
+    
+    if (id) {
+        const index = state.finances.fixedExpenses.findIndex(f => f.id === id);
+        if (index !== -1) {
+            state.finances.fixedExpenses[index] = {
+                ...state.finances.fixedExpenses[index],
+                title, amount, dueDay, desc
+            };
+        }
+    } else {
+        const newItem = {
+            id: 'fx_' + Date.now(),
+            title,
+            amount,
+            dueDay,
+            desc,
+            history: {} // Mapeia "YYYY-MM" -> boolean
+        };
+        state.finances.fixedExpenses.push(newItem);
+    }
+    
+    saveData();
+    closeFixedExpenseModal();
+    renderAll();
+}
+
+function deleteFixedExpense() {
+    const id = document.getElementById('fixed-expense-id').value;
+    if (!id) return;
+    
+    if (confirm('Deseja realmente excluir esta despesa fixa?')) {
+        state.finances.fixedExpenses = (state.finances.fixedExpenses || []).filter(f => f.id !== id);
+        saveData();
+        closeFixedExpenseModal();
+        renderAll();
+    }
+}
+
+function deleteFixedExpenseDirect(id, event) {
+    if (event) event.stopPropagation();
+    if (confirm('Deseja realmente excluir esta despesa fixa?')) {
+        state.finances.fixedExpenses = (state.finances.fixedExpenses || []).filter(f => f.id !== id);
+        saveData();
+        renderAll();
+    }
+}
+
+function toggleFixedExpensePayment(id, event) {
+    const item = (state.finances.fixedExpenses || []).find(f => f.id === id);
+    if (item) {
+        if (!item.history) item.history = {};
+        const isPaid = event.target.checked;
+        item.history[state.currentFinanceMonth] = isPaid;
+        saveData();
+        renderAll();
+    }
+}
+
+// Configurações do Cartão
+function openCreditCardSettingsModal() {
+    const modal = document.getElementById('modal-credit-card-settings');
+    if (!modal) return;
+    
+    const settings = state.finances.cardSettings || { limit: 3000, closingDay: 5, dueDay: 12, name: 'Cartão Principal' };
+    
+    document.getElementById('card-settings-name').value = settings.name || 'Cartão Principal';
+    document.getElementById('card-settings-limit').value = settings.limit || 3000;
+    document.getElementById('card-settings-closing-day').value = settings.closingDay || 5;
+    document.getElementById('card-settings-due-day').value = settings.dueDay || 12;
+    
+    modal.classList.add('active');
+}
+
+function closeCreditCardSettingsModal() {
+    const modal = document.getElementById('modal-credit-card-settings');
+    if (modal) modal.classList.remove('active');
+}
+
+function saveCreditCardSettings(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('card-settings-name').value.trim() || 'Cartão Principal';
+    const limit = parseFloat(document.getElementById('card-settings-limit').value) || 3000;
+    const closingDay = parseInt(document.getElementById('card-settings-closing-day').value) || 5;
+    const dueDay = parseInt(document.getElementById('card-settings-due-day').value) || 12;
+    
+    state.finances.cardSettings = { name, limit, closingDay, dueDay };
+    
+    saveData();
+    closeCreditCardSettingsModal();
+    renderAll();
+}
+
+// Lógica de Lançamentos de Cartão de Crédito por Fatura (Com parcelamentos)
+// Retorna a lista de transações ativas na fatura do mês selecionado "YYYY-MM"
+function getCardExpensesForInvoice(targetMonthStr) {
+    const expenses = state.finances.expenses || [];
+    const settings = state.finances.cardSettings || { closingDay: 5, dueDay: 12 };
+    const closingDay = settings.closingDay;
+    
+    const invoiceExpenses = [];
+    
+    expenses.forEach(exp => {
+        if (exp.method !== 'card') return;
+        
+        const [expY, expM, expD] = exp.date.split('-').map(Number);
+        
+        // Determina o mês de fatura original em que esta compra entra.
+        // Se o dia da compra é MAIOR que o dia de fechamento, entra na fatura do mês subsequente.
+        let purchaseInvoiceMonth = expM;
+        let purchaseInvoiceYear = expY;
+        
+        if (expD > closingDay) {
+            purchaseInvoiceMonth += 1;
+            if (purchaseInvoiceMonth > 12) {
+                purchaseInvoiceMonth = 1;
+                purchaseInvoiceYear += 1;
+            }
+        }
+        
+        const installmentsCount = exp.installments || 1;
+        
+        // Loop por cada parcela
+        for (let i = 0; i < installmentsCount; i++) {
+            // Calcula o mês de fatura desta parcela específica
+            let instMonth = purchaseInvoiceMonth + i;
+            let instYear = purchaseInvoiceYear;
+            
+            while (instMonth > 12) {
+                instMonth -= 12;
+                instYear += 1;
+            }
+            
+            const instMonthStr = `${instYear}-${instMonth.toString().padStart(2, '0')}`;
+            
+            if (instMonthStr === targetMonthStr) {
+                invoiceExpenses.push({
+                    ...exp,
+                    installmentLabel: `${i + 1}/${installmentsCount}`,
+                    installmentAmount: exp.amount / installmentsCount
+                });
+            }
+        }
+    });
+    
+    return invoiceExpenses;
+}
+
+// RENDERIZADORES FINANCEIROS
+function renderFinances() {
+    const labelEl = document.getElementById('finance-current-month-label');
+    if (labelEl) {
+        labelEl.textContent = getFinanceMonthLabel(state.currentFinanceMonth);
+    }
+    
+    const subtab = state.currentFinanceSubTab || 'dashboard';
+    
+    // Forçar exibição da subaba correta ao carregar
+    const contents = document.querySelectorAll('.finance-subtab-content');
+    contents.forEach(div => {
+        if (div.id === `finance-subtab-${subtab}`) {
+            div.style.display = 'block';
+        } else {
+            div.style.display = 'none';
+        }
+    });
+    
+    if (subtab === 'dashboard') {
+        renderFinanceDashboard();
+    } else if (subtab === 'cash') {
+        renderFinanceCash();
+    } else if (subtab === 'card') {
+        renderFinanceCard();
+    } else if (subtab === 'income') {
+        renderFinanceIncome();
+    } else if (subtab === 'fixed') {
+        renderFinanceFixed();
+    }
+}
+
+function renderFinanceDashboard() {
+    const targetMonth = state.currentFinanceMonth;
+    const settings = state.finances.cardSettings || { limit: 3000, closingDay: 5, dueDay: 12 };
+    
+    // 1. Receitas do mês
+    const incomes = state.finances.incomes || [];
+    const monthlyIncomes = incomes.filter(i => i.date.substring(0, 7) === targetMonth);
+    const totalIncome = monthlyIncomes.reduce((acc, i) => acc + i.amount, 0);
+    
+    // 2. Gastos à Vista do mês
+    const expenses = state.finances.expenses || [];
+    const monthlyCash = expenses.filter(e => e.method === 'cash' && e.date.substring(0, 7) === targetMonth);
+    const totalCash = monthlyCash.reduce((acc, e) => acc + e.amount, 0);
+    
+    // 3. Fatura do Cartão do mês (com parcelamentos)
+    const cardExpenses = getCardExpensesForInvoice(targetMonth);
+    const totalCard = cardExpenses.reduce((acc, e) => acc + e.installmentAmount, 0);
+    
+    // 4. Despesas Fixas do mês (somar todas as despesas fixas cadastradas)
+    const fixedList = state.finances.fixedExpenses || [];
+    const totalFixed = fixedList.reduce((acc, f) => acc + f.amount, 0);
+    
+    // 5. Atualizar KPIs do dashboard
+    const incEl = document.getElementById('fin-dash-income');
+    const cshEl = document.getElementById('fin-dash-cash');
+    const crdEl = document.getElementById('fin-dash-card');
+    const fxdEl = document.getElementById('fin-dash-fixed');
+    
+    if (incEl) incEl.textContent = `R$ ${totalIncome.toFixed(2).replace('.', ',')}`;
+    if (cshEl) cshEl.textContent = `R$ ${totalCash.toFixed(2).replace('.', ',')}`;
+    if (crdEl) crdEl.textContent = `R$ ${totalCard.toFixed(2).replace('.', ',')}`;
+    if (fxdEl) fxdEl.textContent = `R$ ${totalFixed.toFixed(2).replace('.', ',')}`;
+    
+    // 6. Previsão de Saldo Final
+    const totalExpenses = totalCash + totalCard + totalFixed;
+    const forecast = totalIncome - totalExpenses;
+    const forecastEl = document.getElementById('fin-dash-forecast');
+    const forecastDescEl = document.getElementById('fin-dash-forecast-desc');
+    
+    if (forecastEl) {
+        forecastEl.textContent = `R$ ${forecast.toFixed(2).replace('.', ',')}`;
+        if (forecast >= 0) {
+            forecastEl.style.color = 'var(--success)';
+            if (forecastDescEl) forecastDescEl.innerHTML = `<span style="color: var(--success); font-weight:700;">Positivo!</span> Sobra projetada para poupar.`;
+        } else {
+            forecastEl.style.color = 'var(--danger)';
+            if (forecastDescEl) forecastDescEl.innerHTML = `<span style="color: var(--danger); font-weight:700;">Alerta!</span> Suas despesas excedem suas receitas em R$ ${Math.abs(forecast).toFixed(2).replace('.', ',')}.`;
+        }
+    }
+    
+    // 7. Limite do Cartão de Crédito
+    const cardLimit = settings.limit || 3000;
+    const limitLabelEl = document.getElementById('fin-dash-limit-label');
+    const limitProgressEl = document.getElementById('fin-dash-limit-progress');
+    const limitPercentEl = document.getElementById('fin-dash-limit-percent');
+    const limitRemainingEl = document.getElementById('fin-dash-limit-remaining');
+    
+    if (limitLabelEl) {
+        limitLabelEl.textContent = `R$ ${totalCard.toFixed(2).replace('.', ',')} / R$ ${cardLimit.toFixed(2).replace('.', ',')}`;
+    }
+    
+    const limitUsagePct = Math.min(100, Math.round((totalCard / cardLimit) * 100)) || 0;
+    if (limitProgressEl) {
+        limitProgressEl.style.width = `${limitUsagePct}%`;
+        if (limitUsagePct > 90) {
+            limitProgressEl.style.background = 'var(--danger)';
+        } else if (limitUsagePct > 70) {
+            limitProgressEl.style.background = 'var(--warning)';
+        } else {
+            limitProgressEl.style.background = 'linear-gradient(90deg, var(--accent) 0%, var(--primary) 100%)';
+        }
+    }
+    if (limitPercentEl) limitPercentEl.textContent = `${limitUsagePct}% utilizado`;
+    if (limitRemainingEl) {
+        const remaining = Math.max(0, cardLimit - totalCard);
+        limitRemainingEl.textContent = `R$ ${remaining.toFixed(2).replace('.', ',')} disponível`;
+    }
+    
+    // 8. Renderizar Gráfico de Categorias Financeiras usando Chart.js
+    renderFinanceChart(monthlyCash, cardExpenses, fixedList);
+}
+
+function renderFinanceChart(cashExpenses, cardExpenses, fixedExpenses) {
+    if (typeof Chart === 'undefined') {
+        const legendEl = document.getElementById('finance-category-legend');
+        if (legendEl) legendEl.innerHTML = '<div class="placeholder-msg">Gráficos indisponíveis offline</div>';
+        return;
+    }
+    
+    // Consolidar todos os gastos por categoria
+    const categoryTotals = {};
+    
+    // Categorias Português mapeamento
+    const categoriesLabels = {
+        alimentacao: 'Alimentação',
+        bem_duravel: 'Bem durável',
+        filhos: 'Filhos',
+        ensino: 'Ensino',
+        gasto_terceiro: 'Gasto de Terceiro',
+        glp: 'GLP',
+        lazer: 'Lazer',
+        mercado: 'Mercado',
+        obra: 'Obra',
+        pet: 'Pet',
+        roupa: 'Roupa',
+        saude: 'Saúde',
+        servico: 'Serviço',
+        taxa: 'Taxa',
+        transporte: 'Transporte',
+        outros: 'Outros'
+    };
+    
+    // Somar Gastos À Vista
+    cashExpenses.forEach(e => {
+        const cat = e.category || 'outros';
+        categoryTotals[cat] = (categoryTotals[cat] || 0) + e.amount;
+    });
+    
+    // Somar Parcelas do Cartão
+    cardExpenses.forEach(e => {
+        const cat = e.category || 'outros';
+        categoryTotals[cat] = (categoryTotals[cat] || 0) + e.installmentAmount;
+    });
+    
+    // Somar Despesas Fixas (como categoria 'Despesa Fixa' ou 'servico')
+    fixedExpenses.forEach(f => {
+        categoryTotals['Despesas Fixas'] = (categoryTotals['Despesas Fixas'] || 0) + f.amount;
+    });
+    
+    // Extrair rótulos e valores para o gráfico
+    const labels = [];
+    const values = [];
+    
+    Object.entries(categoryTotals).forEach(([cat, val]) => {
+        if (val > 0) {
+            labels.push(categoriesLabels[cat] || cat);
+            values.push(val);
+        }
+    });
+    
+    if (labels.length === 0) {
+        const legendEl = document.getElementById('finance-category-legend');
+        if (legendEl) legendEl.innerHTML = '<div class="placeholder-msg" style="grid-column: 1/-1;">Nenhum gasto lançado para gerar gráfico.</div>';
+        
+        // Limpar canvas
+        const canvas = document.getElementById('financeCategoryChart');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        if (financeCategoryChart) {
+            financeCategoryChart.destroy();
+            financeCategoryChart = null;
+        }
+        return;
+    }
+    
+    const chartColors = [
+        '#f43f5e', '#ec4899', '#d946ef', '#a855f7', '#8b5cf6',
+        '#6366f1', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6',
+        '#10b981', '#22c55e', '#84cc16', '#eab308', '#f97316', '#ef4444'
+    ];
+    
+    const legendEl = document.getElementById('finance-category-legend');
+    if (legendEl) {
+        legendEl.innerHTML = '';
+        labels.forEach((label, idx) => {
+            const val = values[idx];
+            const item = document.createElement('div');
+            item.className = 'legend-item';
+            item.innerHTML = `
+                <span class="legend-label">
+                    <span class="legend-color" style="background-color: ${chartColors[idx % chartColors.length]}"></span>
+                    ${label}
+                </span>
+                <span class="legend-value">R$ ${val.toFixed(2).replace('.', ',')}</span>
+            `;
+            legendEl.appendChild(item);
+        });
+    }
+    
+    const rootStyles = window.getComputedStyle(document.documentElement);
+    const getThemeColor = (varName) => rootStyles.getPropertyValue(varName).trim();
+    const textColor = getThemeColor('--text-muted') || (state.theme === 'dark' ? '#94a3b8' : '#64748b');
+    const panelBgColor = getThemeColor('--panel-bg') || (state.theme === 'dark' ? '#16110e' : '#ffffff');
+    const isDark = state.theme === 'dark';
+
+    if (financeCategoryChart) {
+        financeCategoryChart.data.labels = labels;
+        financeCategoryChart.data.datasets[0].data = values;
+        financeCategoryChart.data.datasets[0].borderColor = panelBgColor;
+        financeCategoryChart.options.plugins.legend.labels.color = textColor;
+        financeCategoryChart.update();
+    } else {
+        const ctx = document.getElementById('financeCategoryChart').getContext('2d');
+        financeCategoryChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: chartColors,
+                    borderWidth: 0,
+                    borderColor: panelBgColor,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isDark ? 'hsl(18, 20%, 9%)' : 'hsl(0, 0%, 100%)',
+                        titleColor: isDark ? 'hsl(18, 25%, 92%)' : 'hsl(0, 10%, 15%)',
+                        bodyColor: isDark ? 'hsl(18, 15%, 70%)' : 'hsl(0, 5%, 45%)',
+                        borderColor: getThemeColor('--panel-border') || 'transparent',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: R$ ${context.raw.toFixed(2).replace('.', ',')}`;
+                            }
+                        }
+                    }
+                },
+                cutout: '82%'
+            }
+        });
+    }
+}
+
+function renderFinanceCash() {
+    const tbody = document.getElementById('finance-cash-tbody');
+    const emptyMsg = document.getElementById('finance-cash-empty');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    const targetMonth = state.currentFinanceMonth;
+    const expenses = state.finances.expenses || [];
+    
+    const monthlyCash = expenses
+        .filter(e => e.method === 'cash' && e.date.substring(0, 7) === targetMonth)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+    const categoriesLabels = {
+        alimentacao: 'Alimentação', bem_duravel: 'Bem durável', filhos: 'Filhos',
+        ensino: 'Ensino', gasto_terceiro: 'Gasto de Terceiro', glp: 'GLP',
+        lazer: 'Lazer', mercado: 'Mercado', obra: 'Obra', pet: 'Pet',
+        roupa: 'Roupa', saude: 'Saúde', servico: 'Serviço', taxa: 'Taxa',
+        transporte: 'Transporte', outros: 'Outros'
+    };
+    
+    if (monthlyCash.length === 0) {
+        if (emptyMsg) emptyMsg.classList.remove('hidden');
+        tbody.parentElement.style.display = 'none';
+    } else {
+        if (emptyMsg) emptyMsg.classList.add('hidden');
+        tbody.parentElement.style.display = 'table';
+        
+        monthlyCash.forEach(item => {
+            const tr = document.createElement('tr');
+            const [y, m, d] = item.date.split('-');
+            const formattedDate = `${d}/${m}/${y}`;
+            
+            tr.innerHTML = `
+                <td data-label="Data" style="padding: 10px; font-weight: 500;">${formattedDate}</td>
+                <td data-label="Categoria" style="padding: 10px; color: var(--text-muted);">${categoriesLabels[item.category] || item.category}</td>
+                <td data-label="Observação" style="padding: 10px; font-style: italic; color: var(--text-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.desc || '-'}</td>
+                <td data-label="Valor" style="padding: 10px; text-align: right; font-weight: 700; color: var(--text-main);">R$ ${item.amount.toFixed(2).replace('.', ',')}</td>
+                <td data-label="Ação" style="padding: 10px; text-align: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button class="btn-task-action" onclick="openFinanceTransactionModal('${item.id}')" title="Editar" style="padding: 4px; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">
+                            <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
+                        </button>
+                        <button class="btn-task-action delete" onclick="deleteFinanceTransactionDirect('${item.id}', event)" title="Excluir" style="padding: 4px; border-radius: 4px; border: none; background: transparent; color: var(--danger); cursor: pointer;">
+                            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    safeCreateIcons();
+}
+
+function renderFinanceCard() {
+    const tbody = document.getElementById('finance-card-tbody');
+    const emptyMsg = document.getElementById('finance-card-empty');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    const targetMonth = state.currentFinanceMonth;
+    const cardExpenses = getCardExpensesForInvoice(targetMonth).sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    const totalFatura = cardExpenses.reduce((acc, e) => acc + e.installmentAmount, 0);
+    document.getElementById('finance-fatura-total').textContent = `R$ ${totalFatura.toFixed(2).replace('.', ',')}`;
+    
+    const settings = state.finances.cardSettings || { closingDay: 5, dueDay: 12 };
+    document.getElementById('fatura-closing-lbl').textContent = settings.closingDay.toString().padStart(2, '0');
+    document.getElementById('fatura-due-lbl').textContent = settings.dueDay.toString().padStart(2, '0');
+    
+    // Status da Fatura (ex: se o dia de hoje é antes ou depois do vencimento)
+    const today = new Date();
+    const todayDay = today.getDate();
+    const todayMonthStr = today.toISOString().substring(0, 7);
+    const faturaStatusEl = document.getElementById('finance-fatura-status');
+    if (faturaStatusEl) {
+        if (targetMonth < todayMonthStr) {
+            faturaStatusEl.textContent = "Fatura Fechada";
+            faturaStatusEl.style.color = "var(--text-muted)";
+        } else if (targetMonth === todayMonthStr) {
+            if (todayDay > settings.closingDay) {
+                faturaStatusEl.textContent = "Fatura Fechada";
+                faturaStatusEl.style.color = "var(--warning)";
+            } else {
+                faturaStatusEl.textContent = "Fatura Aberta";
+                faturaStatusEl.style.color = "var(--success)";
+            }
+        } else {
+            faturaStatusEl.textContent = "Fatura Futura";
+            faturaStatusEl.style.color = "var(--text-muted)";
+        }
+    }
+    
+    const categoriesLabels = {
+        alimentacao: 'Alimentação', bem_duravel: 'Bem durável', filhos: 'Filhos',
+        ensino: 'Ensino', gasto_terceiro: 'Gasto de Terceiro', glp: 'GLP',
+        lazer: 'Lazer', mercado: 'Mercado', obra: 'Obra', pet: 'Pet',
+        roupa: 'Roupa', saude: 'Saúde', servico: 'Serviço', taxa: 'Taxa',
+        transporte: 'Transporte', outros: 'Outros'
+    };
+    
+    if (cardExpenses.length === 0) {
+        if (emptyMsg) emptyMsg.classList.remove('hidden');
+        tbody.parentElement.style.display = 'none';
+    } else {
+        if (emptyMsg) emptyMsg.classList.add('hidden');
+        tbody.parentElement.style.display = 'table';
+        
+        cardExpenses.forEach(item => {
+            const tr = document.createElement('tr');
+            const [y, m, d] = item.date.split('-');
+            const formattedDate = `${d}/${m}/${y}`;
+            
+            tr.innerHTML = `
+                <td data-label="Data Compra" style="padding: 10px; font-weight: 500;">${formattedDate}</td>
+                <td data-label="Categoria" style="padding: 10px; color: var(--text-muted);">${categoriesLabels[item.category] || item.category}</td>
+                <td data-label="Observação" style="padding: 10px; font-style: italic; color: var(--text-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.desc || '-'}</td>
+                <td data-label="Parcela" style="padding: 10px; text-align: center; color: var(--accent); font-weight: 600;">${item.installmentLabel}</td>
+                <td data-label="Valor" style="padding: 10px; text-align: right; font-weight: 700; color: var(--text-main);">R$ ${item.installmentAmount.toFixed(2).replace('.', ',')}</td>
+                <td data-label="Ação" style="padding: 10px; text-align: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button class="btn-task-action" onclick="openFinanceTransactionModal('${item.id}')" title="Editar" style="padding: 4px; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">
+                            <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
+                        </button>
+                        <button class="btn-task-action delete" onclick="deleteFinanceTransactionDirect('${item.id}', event)" title="Excluir" style="padding: 4px; border-radius: 4px; border: none; background: transparent; color: var(--danger); cursor: pointer;">
+                            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    safeCreateIcons();
+}
+
+function renderFinanceIncome() {
+    const tbody = document.getElementById('finance-income-tbody');
+    const emptyMsg = document.getElementById('finance-income-empty');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    const targetMonth = state.currentFinanceMonth;
+    const incomes = state.finances.incomes || [];
+    
+    const monthlyIncomes = incomes
+        .filter(i => i.date.substring(0, 7) === targetMonth)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+    const categoriesLabels = {
+        salario: 'Salário',
+        bolsa: 'Bolsa de Estudos',
+        freelance: 'Freelance',
+        rendimentos: 'Rendimentos',
+        outros: 'Outros'
+    };
+    
+    if (monthlyIncomes.length === 0) {
+        if (emptyMsg) emptyMsg.classList.remove('hidden');
+        tbody.parentElement.style.display = 'none';
+    } else {
+        if (emptyMsg) emptyMsg.classList.add('hidden');
+        tbody.parentElement.style.display = 'table';
+        
+        monthlyIncomes.forEach(item => {
+            const tr = document.createElement('tr');
+            const [y, m, d] = item.date.split('-');
+            const formattedDate = `${d}/${m}/${y}`;
+            
+            tr.innerHTML = `
+                <td data-label="Data" style="padding: 10px; font-weight: 500;">${formattedDate}</td>
+                <td data-label="Categoria" style="padding: 10px; color: var(--success); font-weight: 600;">${categoriesLabels[item.category] || item.category}</td>
+                <td data-label="Origem / Detalhe" style="padding: 10px; font-style: italic; color: var(--text-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.desc || '-'}</td>
+                <td data-label="Valor" style="padding: 10px; text-align: right; font-weight: 700; color: var(--success);">R$ ${item.amount.toFixed(2).replace('.', ',')}</td>
+                <td data-label="Ação" style="padding: 10px; text-align: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button class="btn-task-action" onclick="openFinanceTransactionModal('${item.id}')" title="Editar" style="padding: 4px; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">
+                            <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
+                        </button>
+                        <button class="btn-task-action delete" onclick="deleteFinanceTransactionDirect('${item.id}', event)" title="Excluir" style="padding: 4px; border-radius: 4px; border: none; background: transparent; color: var(--danger); cursor: pointer;">
+                            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    safeCreateIcons();
+}
+
+function renderFinanceFixed() {
+    const tbody = document.getElementById('finance-fixed-tbody');
+    const emptyMsg = document.getElementById('finance-fixed-empty');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    const fixedList = state.finances.fixedExpenses || [];
+    const targetMonth = state.currentFinanceMonth;
+    
+    let paidCount = 0;
+    
+    if (fixedList.length === 0) {
+        if (emptyMsg) emptyMsg.classList.remove('hidden');
+        tbody.parentElement.style.display = 'none';
+    } else {
+        if (emptyMsg) emptyMsg.classList.add('hidden');
+        tbody.parentElement.style.display = 'table';
+        
+        fixedList.forEach(item => {
+            const tr = document.createElement('tr');
+            
+            if (!item.history) item.history = {};
+            const isPaid = item.history[targetMonth] === true;
+            if (isPaid) paidCount++;
+            
+            tr.innerHTML = `
+                <td data-label="Pago" style="padding: 10px; text-align: center;">
+                    <input type="checkbox" onchange="toggleFixedExpensePayment('${item.id}', event)" ${isPaid ? 'checked' : ''} style="cursor: pointer; width: 16px; height: 16px;">
+                </td>
+                <td data-label="Despesa" style="padding: 10px; font-weight: 500;">
+                    ${item.title}
+                    ${item.desc ? `<div style="font-size: 0.7rem; color: var(--text-muted); font-weight: normal; font-style: italic;">${item.desc}</div>` : ''}
+                </td>
+                <td data-label="Vence Dia" style="padding: 10px; text-align: center; color: var(--text-muted); font-weight: 600;">Dia ${item.dueDay}</td>
+                <td data-label="Valor" style="padding: 10px; text-align: right; font-weight: 700; color: var(--text-main);">R$ ${item.amount.toFixed(2).replace('.', ',')}</td>
+                <td data-label="Ação" style="padding: 10px; text-align: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button class="btn-task-action" onclick="openFixedExpenseModal('${item.id}')" title="Editar" style="padding: 4px; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">
+                            <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i>
+                        </button>
+                        <button class="btn-task-action delete" onclick="deleteFixedExpenseDirect('${item.id}', event)" title="Excluir" style="padding: 4px; border-radius: 4px; border: none; background: transparent; color: var(--danger); cursor: pointer;">
+                            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    document.getElementById('fixed-paid-count').textContent = `${paidCount} de ${fixedList.length} pagas`;
+    safeCreateIcons();
+}
+
+// Expor novas ações de projetos, financeiras e de segurança na janela
+window.openProjectModal = openProjectModal;
+window.closeProjectModal = closeProjectModal;
+window.saveProject = saveProject;
+window.deleteProject = deleteProject;
+window.getProjectName = getProjectName;
+window.renderProjects = renderProjects;
+
+window.switchFinanceSubTab = switchFinanceSubTab;
+window.adjustFinanceMonth = adjustFinanceMonth;
+window.openFinanceTransactionModal = openFinanceTransactionModal;
+window.closeFinanceTransactionModal = closeFinanceTransactionModal;
+window.toggleFinanceTransactionTypeFields = toggleFinanceTransactionTypeFields;
+window.saveFinanceTransaction = saveFinanceTransaction;
+window.deleteFinanceTransaction = deleteFinanceTransaction;
+window.deleteFinanceTransactionDirect = deleteFinanceTransactionDirect;
+window.openFixedExpenseModal = openFixedExpenseModal;
+window.closeFixedExpenseModal = closeFixedExpenseModal;
+window.saveFixedExpense = saveFixedExpense;
+window.deleteFixedExpense = deleteFixedExpense;
+window.deleteFixedExpenseDirect = deleteFixedExpenseDirect;
+window.toggleFixedExpensePayment = toggleFixedExpensePayment;
+window.openCreditCardSettingsModal = openCreditCardSettingsModal;
+window.closeCreditCardSettingsModal = closeCreditCardSettingsModal;
+window.saveCreditCardSettings = saveCreditCardSettings;
+window.renderFinances = renderFinances;
+
 window.exportBackup = exportBackup;
 window.importBackup = importBackup;
 window.changeAccessPassword = changeAccessPassword;
