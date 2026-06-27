@@ -382,19 +382,25 @@ function loadData() {
     const lockOverlay = document.getElementById('lock-screen-overlay');
     if (lockOverlay) {
         lockOverlay.classList.add('active');
-        const lockTitle = document.getElementById('lock-title');
         const lockDesc = document.getElementById('lock-desc');
         const lockReset = document.getElementById('lock-reset-section');
         
         if (state.hasPassword) {
-            if (lockTitle) lockTitle.textContent = "TimeFlies Seguro";
             if (lockDesc) lockDesc.textContent = "Insira sua senha de acesso local para entrar.";
             if (lockReset) lockReset.classList.remove('hidden');
         } else {
-            if (lockTitle) lockTitle.textContent = "Configurar Senha Local";
             if (lockDesc) lockDesc.textContent = "Crie uma senha de acesso local para proteger seus dados no celular.";
             if (lockReset) lockReset.classList.add('hidden');
         }
+        
+        // Auto-focar campo de senha automaticamente
+        setTimeout(() => {
+            const passInput = document.getElementById('lock-password-input');
+            if (passInput) {
+                passInput.focus();
+                passInput.select();
+            }
+        }, 100);
     }
 }
 

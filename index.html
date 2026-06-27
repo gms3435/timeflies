@@ -44,23 +44,31 @@
 <body>
     <!-- TELA DE BLOQUEIO (Exigida na inicialização se senha cadastrada) -->
     <div id="lock-screen-overlay" class="lock-screen-overlay">
-        <div class="lock-card glass-card text-center" style="max-width: 360px; width: 90%; padding: 30px 24px; display: flex; flex-direction: column; align-items: center; gap: 20px; border-radius: var(--border-radius-lg); border: 1px solid var(--panel-border); box-shadow: 0 15px 35px var(--panel-shadow);">
-            <div class="logo-icon animate-bell" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(234, 88, 12, 0.25);">
-                <i data-lucide="lock" style="width: 28px; height: 28px; color: white;"></i>
-            </div>
-            <div class="lock-header">
-                <h2 id="lock-title" style="font-size: 1.3rem; font-weight: 800; background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">TimeFlies Seguro</h2>
-                <p id="lock-desc" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Insira sua senha de acesso local para entrar.</p>
-            </div>
-            <form id="lock-form-submit" onsubmit="handleLockSubmit(event)" style="width: 100%; display: flex; flex-direction: column; gap: 12px;">
-                <div class="form-group" style="text-align: left; width: 100%;">
-                    <input type="password" id="lock-password-input" class="form-control" placeholder="Digite sua senha..." required style="text-align: center; font-size: 1.1rem; letter-spacing: 2px;">
+        <div class="lock-card glass-card text-center">
+            <!-- Seção Superior: Logo & Tagline -->
+            <div class="lock-top-row" style="display: flex; align-items: center; gap: 16px; width: 100%; text-align: left;">
+                <div class="logo-icon animate-bell" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(234, 88, 12, 0.25); flex-shrink: 0;">
+                    <i data-lucide="clock-4" style="width: 24px; height: 24px; color: white;"></i>
                 </div>
-                <div id="lock-error-msg" class="text-danger hidden" style="font-size: 0.75rem; text-align: center; margin-top: -4px;">Senha incorreta. Tente novamente.</div>
-                <button type="submit" class="btn-accent" style="width: 100%; justify-content: center; padding: 12px;">Acessar</button>
-            </form>
-            <div id="lock-reset-section" class="hidden" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; width: 100%;">
-                <button type="button" class="btn-danger btn-sm" onclick="resetAllAppData()" style="width: 100%; font-size: 0.75rem; background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 8px;">Esqueceu a senha? Resetar App</button>
+                <div class="lock-header">
+                    <h2 id="lock-title" style="font-size: 1.3rem; font-weight: 800; background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">TimeFlies</h2>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; line-height: 1.3; font-style: italic;">"Se o tempo voa, precisamos nos organizar para acompanhar ele."</p>
+                </div>
+            </div>
+            
+            <!-- Seção Inferior: Form & Entrada -->
+            <div class="lock-bottom-section" style="width: 100%; display: flex; flex-direction: column; gap: 16px;">
+                <p id="lock-desc" style="font-size: 0.85rem; color: var(--text-muted); text-align: left; margin: 0;">Insira sua senha de acesso local para entrar.</p>
+                <form id="lock-form-submit" onsubmit="handleLockSubmit(event)" style="width: 100%; display: flex; flex-direction: column; gap: 12px;">
+                    <div class="form-group" style="text-align: left; width: 100%; margin: 0;">
+                        <input type="password" id="lock-password-input" class="form-control" placeholder="Digite sua senha..." required autofocus style="text-align: center; font-size: 1.1rem; letter-spacing: 2px; width: 100%;">
+                    </div>
+                    <div id="lock-error-msg" class="text-danger hidden" style="font-size: 0.75rem; text-align: center; margin-top: -4px;">Senha incorreta. Tente novamente.</div>
+                    <button type="submit" class="btn-accent" style="width: 100%; justify-content: center; padding: 12px; font-weight: 700;">Acessar</button>
+                </form>
+                <div id="lock-reset-section" class="hidden" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; width: 100%;">
+                    <button type="button" class="btn-danger btn-sm" onclick="resetAllAppData()" style="width: 100%; font-size: 0.75rem; background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 8px;">Esqueceu a senha? Resetar App</button>
+                </div>
             </div>
         </div>
     </div>
