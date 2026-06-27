@@ -1627,7 +1627,7 @@ textarea.form-control {
     }
     
     .header-logo h1 {
-        font-size: 1.15rem;
+        display: none !important;
     }
     
     .subtitle {
@@ -2054,7 +2054,7 @@ textarea.form-control {
     }
     
     .header-logo h1 {
-        font-size: 0.95rem;
+        display: none !important;
     }
     
     .subtitle {
