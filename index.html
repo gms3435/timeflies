@@ -98,6 +98,14 @@
             </div>
 
             <div class="header-actions">
+                <!-- Mini Timer Widget in Header (Opção B) -->
+                <div id="header-mini-timer" class="header-mini-timer hidden" onclick="switchMainTab('tab-timer')" style="cursor: pointer;">
+                    <i data-lucide="timer" style="width: 14px; height: 14px;"></i>
+                    <span id="mini-timer-clock">25:00</span>
+                    <button type="button" class="mini-timer-play-btn" id="btn-mini-timer-toggle" onclick="event.stopPropagation(); toggleTimer();" title="Iniciar/Pausar Timer">
+                        <i data-lucide="play" style="width: 12px; height: 12px;" id="mini-timer-play-icon"></i>
+                    </button>
+                </div>
                 <button class="btn-primary btn-trigger-add-task header-quick-btn" title="Nova Tarefa">
                     <i data-lucide="plus"></i> <span>Nova Tarefa</span>
                 </button>
@@ -110,6 +118,14 @@
                 <button id="btn-toggle-alarms" class="btn-icon" title="Silenciar/Ativar Alarmes de Agenda">
                     <i data-lucide="bell" class="bell-on-icon"></i>
                     <i data-lucide="bell-off" class="bell-off-icon" style="display: none;"></i>
+                </button>
+                <button id="theme-toggle-mono" class="btn-icon" title="Tema Preto & Branco">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-mercury-svg" style="width: 16px; height: 16px;">
+                        <path d="M 8 3 A 4 4 0 0 0 16 3" />
+                        <circle cx="12" cy="11.5" r="4.5" />
+                        <path d="M 12 16 v 5" />
+                        <path d="M 9.5 18.5 h 5" />
+                    </svg>
                 </button>
                 <button id="theme-toggle" class="btn-icon" title="Alternar tema">
                     <i data-lucide="sun" class="sun-icon"></i>
@@ -136,26 +152,29 @@
             </div>
             
             <nav class="drawer-nav">
-                <button class="drawer-link active" onclick="selectDrawerTab('tab-agenda')">
-                    <i data-lucide="calendar"></i> <span>Agenda Diária</span>
+                <button class="drawer-link active" onclick="selectDrawerTab('tab-home')">
+                    <i data-lucide="home"></i> <span>Home</span>
                 </button>
-                <button class="drawer-link" onclick="selectDrawerTab('tab-tarefas')">
-                    <i data-lucide="check-square"></i> <span>Minhas Tarefas</span>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-timeflies')">
+                    <i data-lucide="clock"></i> <span>⏰ Time Flies</span>
                 </button>
                 <button class="drawer-link" onclick="selectDrawerTab('tab-projects')">
-                    <i data-lucide="folder-kanban"></i> <span>Projetos & Estudos</span>
+                    <i data-lucide="graduation-cap"></i> <span>📚 Learn Flies</span>
                 </button>
-                <button class="drawer-link" onclick="selectDrawerTab('tab-timer')">
-                    <i data-lucide="timer"></i> <span>Timer de Foco</span>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-esg')">
+                    <i data-lucide="leaf"></i> <span>🌱 ESG Flies</span>
                 </button>
-                <button class="drawer-link" onclick="selectDrawerTab('tab-smartfit')">
-                    <i data-lucide="sparkles"></i> <span>Smart Fit</span>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-mind')">
+                    <i data-lucide="brain"></i> <span>🧠 Mind Flies</span>
+                </button>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-body')">
+                    <i data-lucide="heart"></i> <span>💪 Body Flies</span>
+                </button>
+                <button class="drawer-link" onclick="selectDrawerTab('tab-finances')">
+                    <i data-lucide="wallet"></i> <span>💰 Money Flies</span>
                 </button>
                 <button class="drawer-link" onclick="selectDrawerTab('tab-metrics')">
                     <i data-lucide="pie-chart"></i> <span>Métricas & Gráficos</span>
-                </button>
-                <button class="drawer-link" onclick="selectDrawerTab('tab-finances')">
-                    <i data-lucide="wallet"></i> <span>Controle Financeiro</span>
                 </button>
                 <button class="drawer-link" onclick="selectDrawerTab('tab-settings')">
                     <i data-lucide="settings"></i> <span>Ajustes & Segurança</span>
@@ -170,168 +189,623 @@
 
         <!-- MAIN LAYOUT -->
         <main class="app-main">
-            <!-- ABA 1: Agenda Diária -->
-            <div id="tab-agenda" class="tab-content active">
-                <section class="agenda-column">
-                    <div class="glass-panel agenda-panel">
-                        <div class="panel-header space-between">
-                            <div class="title-with-icon">
-                                <i data-lucide="calendar" class="text-secondary"></i>
-                                <h2>Agenda Diária (Horários)</h2>
+            <!-- ABA: Home -->
+            <div id="tab-home" class="tab-content active">
+                <section class="home-welcome-header">
+                    <h2 id="home-greeting">Olá! Carregando seu dia...</h2>
+                    <p id="home-date-subtitle">Carregando data...</p>
+                </section>
+                
+                <section class="home-grid">
+                    <!-- Painel FlyScore -->
+                    <div class="glass-panel flyscore-panel">
+                        <div class="title-with-icon" style="justify-content: center; width: 100%;">
+                            <i data-lucide="sparkles" class="text-primary"></i>
+                            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800;">Seu FlyScore</h3>
+                        </div>
+                        <div class="flyscore-circle-wrapper">
+                            <svg class="flyscore-svg">
+                                <circle class="flyscore-bg-circle" cx="70" cy="70" r="65"></circle>
+                                <circle id="home-flyscore-circle" class="flyscore-progress-circle" cx="70" cy="70" r="65"></circle>
+                            </svg>
+                            <span id="home-flyscore-value" class="flyscore-value-text">0</span>
+                        </div>
+                        <div id="home-flyscore-status" class="flyscore-status text-primary">Calculando...</div>
+                        <p id="home-flyscore-desc" class="flyscore-desc">Suas ações diárias constroem sua pontuação.</p>
+                    </div>
+                    
+                    <!-- Cockpit de Módulos -->
+                    <div class="cockpit-grid">
+                        <!-- Módulo Tempo -->
+                        <div class="glass-panel cockpit-card" onclick="switchMainTab('tab-timeflies')">
+                            <div class="cockpit-card-header">
+                                <span class="cockpit-card-title">
+                                    <i data-lucide="clock" class="text-secondary"></i>
+                                    ⏰ Time Flies
+                                </span>
+                                <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
                             </div>
-                            <button class="btn-primary btn-trigger-add-block">
-                                <i data-lucide="plus"></i> Bloquear Horário
-                            </button>
+                            <div class="cockpit-card-body">
+                                <div class="cockpit-metric-row">
+                                    <span>Comprometido:</span>
+                                    <span id="cockpit-time-committed" class="cockpit-metric-value">0.0h</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Tempo Livre:</span>
+                                    <span id="cockpit-time-free" class="cockpit-metric-value">24.0h</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Tarefas Concluídas:</span>
+                                    <span id="cockpit-time-tasks" class="cockpit-metric-value">0/0</span>
+                                </div>
+                                <div class="cockpit-progress-container">
+                                    <div id="cockpit-time-progress" class="cockpit-progress-bar" style="background: var(--primary);"></div>
+                                </div>
+                            </div>
                         </div>
                         
-                        <!-- Seletor de Dia da Semana -->
-                        <div class="day-selector-bar" id="agenda-day-selector">
-                            <button class="day-chip" data-day="seg">Seg</button>
-                            <button class="day-chip" data-day="ter">Ter</button>
-                            <button class="day-chip" data-day="qua">Qua</button>
-                            <button class="day-chip" data-day="qui">Qui</button>
-                            <button class="day-chip" data-day="sex">Sex</button>
-                            <button class="day-chip" data-day="sab">Sáb</button>
-                            <button class="day-chip" data-day="dom">Dom</button>
+                        <!-- Módulo Financeiro -->
+                        <div class="glass-panel cockpit-card" onclick="switchMainTab('tab-finances')">
+                            <div class="cockpit-card-header">
+                                <span class="cockpit-card-title">
+                                    <i data-lucide="wallet" class="text-accent"></i>
+                                    💰 Money Flies
+                                </span>
+                                <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+                            </div>
+                            <div class="cockpit-card-body">
+                                <div class="cockpit-metric-row">
+                                    <span>Saldo do Mês:</span>
+                                    <span id="cockpit-money-balance" class="cockpit-metric-value">R$ 0,00</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Fatura Prevista:</span>
+                                    <span id="cockpit-money-invoice" class="cockpit-metric-value">R$ 0,00</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Orçamentos:</span>
+                                    <span id="cockpit-money-budgets" class="cockpit-metric-value">100% OK</span>
+                                </div>
+                                <div class="cockpit-progress-container">
+                                    <div id="cockpit-money-progress" class="cockpit-progress-bar" style="background: var(--accent);"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Módulo Projetos (Learn Flies) -->
+                        <div class="glass-panel cockpit-card" onclick="switchMainTab('tab-projects')">
+                            <div class="cockpit-card-header">
+                                <span class="cockpit-card-title">
+                                    <i data-lucide="graduation-cap" style="color: var(--success);"></i>
+                                    📚 Learn Flies
+                                </span>
+                                <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+                            </div>
+                            <div class="cockpit-card-body">
+                                <div class="cockpit-metric-row">
+                                    <span>Projetos Ativos:</span>
+                                    <span id="cockpit-learn-count" class="cockpit-metric-value">0</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Média Geral (GPA):</span>
+                                    <span id="cockpit-learn-gpa" class="cockpit-metric-value">N/A</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Streak de Idiomas:</span>
+                                    <span id="cockpit-learn-streak" class="cockpit-metric-value">0 dias</span>
+                                </div>
+                                <div class="cockpit-progress-container">
+                                    <div id="cockpit-learn-progress" class="cockpit-progress-bar" style="background: var(--success);"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Módulo ESG -->
+                        <div class="glass-panel cockpit-card" onclick="switchMainTab('tab-esg')">
+                            <div class="cockpit-card-header">
+                                <span class="cockpit-card-title">
+                                    <i data-lucide="leaf" style="color: hsl(142, 60%, 45%);"></i>
+                                    🌱 ESG Flies
+                                </span>
+                                <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+                            </div>
+                            <div class="cockpit-card-body">
+                                <div class="cockpit-metric-row">
+                                    <span>CO₂ Emissões:</span>
+                                    <span id="cockpit-esg-co2" class="cockpit-metric-value">0.0 Kg</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Dias Sem Carne:</span>
+                                    <span id="cockpit-esg-meatless" class="cockpit-metric-value">0</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Plásticos Evitados:</span>
+                                    <span id="cockpit-esg-plastic" class="cockpit-metric-value">0</span>
+                                </div>
+                                <div class="cockpit-progress-container">
+                                    <div id="cockpit-esg-progress" class="cockpit-progress-bar" style="background: hsl(142, 60%, 45%);"></div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="agenda-scroll-container">
-                            <div class="agenda-timeline" id="daily-timeline">
-                                <!-- Inserido dinamicamente via JS -->
+                        <!-- Módulo Mind -->
+                        <div class="glass-panel cockpit-card" onclick="switchMainTab('tab-mind')">
+                            <div class="cockpit-card-header">
+                                <span class="cockpit-card-title">
+                                    <i data-lucide="brain" class="text-primary"></i>
+                                    🧠 Mind Flies
+                                </span>
+                                <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+                            </div>
+                            <div class="cockpit-card-body">
+                                <div class="cockpit-metric-row">
+                                    <span>Humor Médio:</span>
+                                    <span id="cockpit-mind-mood" class="cockpit-metric-value">N/A</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Nível de Energia:</span>
+                                    <span id="cockpit-mind-energy" class="cockpit-metric-value">N/A</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Práticas Feitas:</span>
+                                    <span id="cockpit-mind-practices" class="cockpit-metric-value">0</span>
+                                </div>
+                                <div class="cockpit-progress-container">
+                                    <div id="cockpit-mind-progress" class="cockpit-progress-bar" style="background: var(--primary);"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Módulo Body -->
+                        <div class="glass-panel cockpit-card" onclick="switchMainTab('tab-body')">
+                            <div class="cockpit-card-header">
+                                <span class="cockpit-card-title">
+                                    <i data-lucide="heart" style="color: hsl(0, 80%, 55%);"></i>
+                                    💪 Body Flies
+                                </span>
+                                <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+                            </div>
+                            <div class="cockpit-card-body">
+                                <div class="cockpit-metric-row">
+                                    <span>Água Consumida:</span>
+                                    <span id="cockpit-body-water" class="cockpit-metric-value">0/8 copos</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Média de Sono:</span>
+                                    <span id="cockpit-body-sleep" class="cockpit-metric-value">0.0h</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Exercícios (Min):</span>
+                                    <span id="cockpit-body-exercise" class="cockpit-metric-value">0 min</span>
+                                </div>
+                                <div class="cockpit-progress-container">
+                                    <div id="cockpit-body-progress" class="cockpit-progress-bar" style="background: hsl(0, 80%, 55%);"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </section>
             </div>
-            
-            <!-- ABA 2: Minhas Tarefas -->
-            <div id="tab-tarefas" class="tab-content">
-                <section class="tasks-column">
-                    <div class="glass-panel tasks-panel">
-                        <div class="panel-header flex-column">
-                            <div class="space-between width-full">
-                                <div class="title-with-icon">
-                                    <i data-lucide="check-square" class="text-success"></i>
-                                    <h2>Suas Tarefas</h2>
-                                </div>
-                                <div class="flex-end" style="gap: 8px;">
-                                    <button class="btn-secondary" id="btn-export-whatsapp" style="padding: 10px 16px;">
-                                        <i data-lucide="share-2"></i> WhatsApp
-                                    </button>
-                                    <button class="btn-primary btn-trigger-add-task">
-                                        <i data-lucide="plus"></i> Nova Tarefa
-                                    </button>
-                                </div>
-                            </div>
 
-                            <!-- Alternar Visualização -->
-                            <div class="view-toggle-bar">
-                                <button class="view-toggle-btn active" id="btn-view-list" onclick="switchTaskView('list')">
-                                    <i data-lucide="list"></i> Lista
-                                </button>
-                                <button class="view-toggle-btn" id="btn-view-priorities" onclick="switchTaskView('priorities')">
-                                    <i data-lucide="grid-3x3"></i> Painel de Prioridades
-                                </button>
-                            </div>
-
-                            <!-- Categoria Filtros -->
-                            <div class="category-tabs">
-                                <button class="tab-btn active" data-category="all">Todas</button>
-                                <button class="tab-btn" data-category="casa" data-color="casa">
-                                    <span class="dot dot-casa"></span>Casa
-                                </button>
-                                <button class="tab-btn" data-category="trabalho" data-color="trabalho">
-                                    <span class="dot dot-trabalho"></span>Trabalho
-                                </button>
-                                <button class="tab-btn" data-category="faculdade" data-color="faculdade">
-                                    <span class="dot dot-faculdade"></span>Faculdade
-                                </button>
-                            </div>
-
-                            <!-- Filtro por Dia da Semana -->
-                            <div class="day-filter-tabs" id="task-day-filter-bar">
-                                <button class="day-filter-btn active" data-day="all">Todos os Dias</button>
-                                <button class="day-filter-btn" data-day="seg">Seg</button>
-                                <button class="day-filter-btn" data-day="ter">Ter</button>
-                                <button class="day-filter-btn" data-day="qua">Qua</button>
-                                <button class="day-filter-btn" data-day="qui">Qui</button>
-                                <button class="day-filter-btn" data-day="sex">Sex</button>
-                                <button class="day-filter-btn" data-day="sab">Sáb</button>
-                                <button class="day-filter-btn" data-day="dom">Dom</button>
-                                <button class="day-filter-btn" data-day="none">Não Agendados</button>
-                            </div>
-                        </div>
-                        
-                        <div class="tasks-scroll-container">
-                            <div class="tasks-list" id="tasks-list-container">
-                                <!-- Inserido dinamicamente via JS -->
-                            </div>
-                            <div class="tasks-priorities-grid hidden" id="tasks-priorities-container">
-                                <!-- Colunas por prioridade inseridas via JS -->
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
-            
-            <!-- ABA: Projetos & Estudos -->
-            <div id="tab-projects" class="tab-content">
+            <!-- ABA 1: Time Flies (Agenda & Tarefas) -->
+            <div id="tab-timeflies" class="tab-content">
                 <section class="tasks-column" style="height: 100%;">
-                    <div class="glass-panel tasks-panel">
-                        <div class="panel-header space-between">
+                    <div class="glass-panel tasks-panel" style="display: flex; flex-direction: column; height: 100%;">
+                        <div class="panel-header space-between" style="border-bottom: none; padding-bottom: 0;">
                             <div class="title-with-icon">
-                                <i data-lucide="folder-kanban" class="text-primary"></i>
-                                <h2>Disciplinas & Projetos</h2>
+                                <i data-lucide="clock" class="text-secondary"></i>
+                                <h2>Time Flies</h2>
                             </div>
                             <div class="flex-end" style="gap: 8px;">
-                                <button class="btn-primary" onclick="openProjectModal()">
+                                <button class="btn-secondary" id="btn-timeflies-share" style="padding: 10px 16px;">
+                                    <i data-lucide="share-2"></i> WhatsApp
+                                </button>
+                                <button class="btn-primary" id="btn-timeflies-action" style="padding: 10px 16px;">
+                                    <i data-lucide="plus"></i> Novo
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sub-abas do Time Flies -->
+                        <div class="timeflies-sub-tabs" style="display: flex; gap: 6px; margin: 12px 0 16px 0; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; overflow-x: auto; width: 100%;">
+                            <button class="sub-tab-btn active" id="btn-timeflies-tab-agenda" onclick="switchTimeFliesSubTab('agenda')">Agenda Diária</button>
+                            <button class="sub-tab-btn" id="btn-timeflies-tab-tasks" onclick="switchTimeFliesSubTab('tasks')">Minhas Tarefas</button>
+                        </div>
+
+                        <!-- SUB-ABA: Agenda Diária -->
+                        <div id="timeflies-subtab-agenda" class="timeflies-subtab-content">
+                            <!-- Seletor de Dia da Semana -->
+                            <div class="day-selector-bar" id="agenda-day-selector" style="margin-bottom: 12px;">
+                                <button class="day-chip" data-day="seg">Seg</button>
+                                <button class="day-chip" data-day="ter">Ter</button>
+                                <button class="day-chip" data-day="qua">Qua</button>
+                                <button class="day-chip" data-day="qui">Qui</button>
+                                <button class="day-chip" data-day="sex">Sex</button>
+                                <button class="day-chip" data-day="sab">Sáb</button>
+                                <button class="day-chip" data-day="dom">Dom</button>
+                            </div>
+
+                            <!-- Painel de Tarefas Pendentes para Encaixar -->
+                            <div id="agenda-pending-tasks-panel" class="agenda-pending-panel" style="margin-bottom: 12px;">
+                                <button class="pending-panel-toggle" id="btn-toggle-pending-tasks" onclick="togglePendingTasksPanel()">
+                                    <span class="pending-panel-toggle-left">
+                                        <i data-lucide="list-todo" style="width:15px;height:15px;"></i>
+                                        <span id="pending-panel-label">Tarefas Pendentes</span>
+                                        <span id="pending-task-count" class="pending-count-badge">0</span>
+                                    </span>
+                                    <i data-lucide="chevron-down" id="pending-chevron" style="width:15px;height:15px;transition:transform 0.25s;"></i>
+                                </button>
+                                <div id="pending-tasks-list" class="pending-tasks-list">
+                                    <!-- Preenchido dinamicamente via JS -->
+                                </div>
+                            </div>
+
+                            <div class="agenda-scroll-container">
+                                <div class="agenda-timeline" id="daily-timeline">
+                                    <!-- Inserido dinamicamente via JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SUB-ABA: Minhas Tarefas -->
+                        <div id="timeflies-subtab-tasks" class="timeflies-subtab-content" style="display: none;">
+                            <div class="panel-header flex-column" style="padding: 0; border: none; margin-bottom: 12px;">
+                                <!-- Alternar Visualização -->
+                                <div class="view-toggle-bar" style="margin-bottom: 12px; width: 100%;">
+                                    <button class="view-toggle-btn active" id="btn-view-list" onclick="switchTaskView('list')">
+                                        <i data-lucide="list"></i> Lista
+                                    </button>
+                                    <button class="view-toggle-btn" id="btn-view-priorities" onclick="switchTaskView('priorities')">
+                                        <i data-lucide="grid-3x3"></i> Painel de Prioridades
+                                    </button>
+                                </div>
+
+                                <!-- Categoria Filtros -->
+                                <div class="category-tabs" style="margin-bottom: 12px;">
+                                    <button class="tab-btn active" data-category="all">Todas</button>
+                                    <button class="tab-btn" data-category="casa" data-color="casa">
+                                        <span class="dot dot-casa"></span>Casa
+                                    </button>
+                                    <button class="tab-btn" data-category="trabalho" data-color="trabalho">
+                                        <span class="dot dot-trabalho"></span>Trabalho
+                                    </button>
+                                    <button class="tab-btn" data-category="faculdade" data-color="faculdade">
+                                        <span class="dot dot-faculdade"></span>Faculdade
+                                    </button>
+                                </div>
+
+                                <!-- Filtro por Dia da Semana -->
+                                <div class="day-filter-tabs" id="task-day-filter-bar">
+                                    <button class="day-filter-btn active" data-day="all">Todos os Dias</button>
+                                    <button class="day-filter-btn" data-day="seg">Seg</button>
+                                    <button class="day-filter-btn" data-day="ter">Ter</button>
+                                    <button class="day-filter-btn" data-day="qua">Qua</button>
+                                    <button class="day-filter-btn" data-day="qui">Qui</button>
+                                    <button class="day-filter-btn" data-day="sex">Sex</button>
+                                    <button class="day-filter-btn" data-day="sab">Sáb</button>
+                                    <button class="day-filter-btn" data-day="dom">Dom</button>
+                                    <button class="day-filter-btn" data-day="none">Não Agendados</button>
+                                </div>
+                            </div>
+                            
+                            <div class="tasks-scroll-container">
+                                <div class="tasks-list" id="tasks-list-container">
+                                    <!-- Inserido dinamicamente via JS -->
+                                </div>
+                                <div class="tasks-priorities-grid hidden" id="tasks-priorities-container">
+                                    <!-- Colunas por prioridade inseridas via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- ABA: Learn Flies (Projetos & Estudos) -->
+            <div id="tab-projects" class="tab-content">
+                <section class="tasks-column" style="height: 100%;">
+                    <div class="glass-panel tasks-panel" style="display: flex; flex-direction: column; height: 100%;">
+                        <div class="panel-header space-between" style="border-bottom: none; padding-bottom: 0;">
+                            <div class="title-with-icon">
+                                <i data-lucide="graduation-cap" class="text-primary"></i>
+                                <h2>Learn Flies</h2>
+                            </div>
+                            <div class="flex-end" style="gap: 8px;">
+                                <button class="btn-primary" id="btn-learn-new-action" onclick="handleNewLearnAction()">
                                     <i data-lucide="plus"></i> Novo Projeto / Disciplina
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Resumo Acadêmico -->
-                        <div class="academic-summary-bar" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; width: 100%;">
-                            <div class="stat-card" style="flex: 1; min-width: 150px; align-items: flex-start; padding: 12px 16px;">
-                                <span class="stat-label">Disciplinas Restantes</span>
-                                <span class="stat-value text-success" id="academic-remaining">5</span>
+                        <!-- Sub-abas do Learn Flies -->
+                        <div class="learn-sub-tabs" style="display: flex; gap: 6px; margin: 12px 0 16px 0; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; overflow-x: auto; width: 100%;">
+                            <button class="sub-tab-btn active" id="btn-learn-tab-disciplines" onclick="switchLearnSubTab('disciplines')">Disciplinas & Projetos</button>
+                            <button class="sub-tab-btn" id="btn-learn-tab-books" onclick="switchLearnSubTab('books')">Biblioteca Pessoal</button>
+                            <button class="sub-tab-btn" id="btn-learn-tab-languages" onclick="switchLearnSubTab('languages')">Estudo de Idiomas</button>
+                        </div>
+
+                        <!-- SUB-ABA 1: Disciplinas & Projetos -->
+                        <div id="learn-subtab-disciplines" class="learn-subtab-content" style="flex: 1; overflow-y: auto;">
+                            <!-- Resumo Acadêmico -->
+                            <div class="academic-summary-bar" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; width: 100%;">
+                                <div class="stat-card" style="flex: 1; min-width: 150px; align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Disciplinas Restantes</span>
+                                    <span class="stat-value text-success" id="academic-remaining">0</span>
+                                </div>
+                                <div class="stat-card" style="flex: 1; min-width: 150px; align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Média Geral (GPA)</span>
+                                    <span class="stat-value" id="academic-gpa" style="color: var(--accent);">0.00</span>
+                                </div>
+                                <div class="stat-card" style="flex: 1; min-width: 150px; align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Horas de Estudo (Total)</span>
+                                    <span class="stat-value" id="academic-total-hours">0.0h</span>
+                                </div>
                             </div>
-                            <div class="stat-card" style="flex: 1; min-width: 150px; align-items: flex-start; padding: 12px 16px;">
-                                <span class="stat-label">Média Geral (GPA)</span>
-                                <span class="stat-value" id="academic-gpa" style="color: var(--accent);">0.00</span>
-                            </div>
-                            <div class="stat-card" style="flex: 1; min-width: 150px; align-items: flex-start; padding: 12px 16px;">
-                                <span class="stat-label">Horas de Estudo (Total)</span>
-                                <span class="stat-value" id="academic-total-hours">0.0h</span>
+
+                            <!-- Grid de Projetos -->
+                            <div class="tasks-scroll-container" style="margin-top: 16px; overflow-y: auto;">
+                                <div class="projects-grid-container" id="projects-grid-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; width: 100%;">
+                                    <!-- Inserido dinamicamente via JS -->
+                                </div>
+                                <div id="projects-empty-msg" class="placeholder-msg">
+                                    <i data-lucide="folder-open"></i>
+                                    Nenhum projeto ou disciplina cadastrada.
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Grid de Projetos -->
-                        <div class="tasks-scroll-container" style="margin-top: 16px; overflow-y: auto;">
-                            <div class="projects-grid-container" id="projects-grid-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; width: 100%;">
+                        <!-- SUB-ABA 2: Biblioteca Pessoal -->
+                        <div id="learn-subtab-books" class="learn-subtab-content" style="flex: 1; overflow-y: auto; display: none;">
+                            <div class="books-grid" id="books-grid-container">
                                 <!-- Inserido dinamicamente via JS -->
                             </div>
-                            <div id="projects-empty-msg" class="placeholder-msg">
-                                <i data-lucide="folder-open"></i>
-                                Nenhum projeto ou disciplina cadastrada. Clique no botão acima para adicionar!
+                            <div id="books-empty-msg" class="placeholder-msg">
+                                <i data-lucide="book-open"></i>
+                                Nenhum livro cadastrado. Clique em "Novo Livro" para começar a acompanhar suas leituras!
+                            </div>
+                        </div>
+
+                        <!-- SUB-ABA 3: Estudo de Idiomas -->
+                        <div id="learn-subtab-languages" class="learn-subtab-content" style="flex: 1; overflow-y: auto; display: none;">
+                            <div style="display: grid; grid-template-columns: 1.2fr 2fr; gap: 16px;" class="finance-dash-grid">
+                                <!-- Streak Card -->
+                                <div class="glass-panel" style="padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015);">
+                                    <div class="logo-icon" style="background: rgba(245,158,11,0.1); color: #f59e0b; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                                        <i data-lucide="flame" style="width: 28px; height: 28px;"></i>
+                                    </div>
+                                    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Seu Streak de Idiomas</h4>
+                                    <div style="font-size: 2.5rem; font-weight: 900; color: #f59e0b; margin: 8px 0;" id="lang-streak-value">0 Dias</div>
+                                    <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0;">Pratique todos os dias para não deixar o fogo apagar!</p>
+                                </div>
+                                
+                                <!-- Log de Minutos Card -->
+                                <div class="glass-panel" style="padding: 20px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; justify-content: center;">
+                                    <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Registrar Prática Diária</h4>
+                                    <form id="lang-practice-form" onsubmit="saveLanguagePractice(event)">
+                                        <div class="form-group" style="margin-bottom: 12px;">
+                                            <label for="lang-select">Idioma</label>
+                                            <select id="lang-select" class="form-control" required>
+                                                <option value="Inglês">Inglês</option>
+                                                <option value="Espanhol">Espanhol</option>
+                                                <option value="Francês">Francês</option>
+                                                <option value="Alemão">Alemão</option>
+                                                <option value="Italiano">Italiano</option>
+                                                <option value="Outro">Outro / Geral</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 16px;">
+                                            <label for="lang-minutes">Minutos Praticados</label>
+                                            <input type="number" id="lang-minutes" class="form-control" placeholder="Ex: 15" min="1" required>
+                                        </div>
+                                        <button type="submit" class="btn-accent" style="width: 100%;">Salvar Prática</button>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <!-- Histórico Recente de Idiomas -->
+                            <div class="glass-panel" style="padding: 16px; margin-top: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015);">
+                                <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px;">Práticas Recentes</h4>
+                                <div id="lang-history-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
+                                    <!-- Inserido dinamicamente via JS -->
+                                </div>
                             </div>
                         </div>
                     </div>
                 </section>
             </div>
 
-            <!-- ABA 3: Controle Financeiro Completo -->
+            <!-- ABA: ESG Flies -->
+            <div id="tab-esg" class="tab-content">
+                <section class="tasks-column" style="height: 100%;">
+                    <div class="glass-panel tasks-panel" style="display: flex; flex-direction: column; height: 100%;">
+                        <div class="panel-header space-between">
+                            <div class="title-with-icon">
+                                <i data-lucide="leaf" style="color: hsl(142, 60%, 45%);"></i>
+                                <h2>🌱 ESG Flies</h2>
+                            </div>
+                            <button class="btn-primary" onclick="openEsgLogModal()">
+                                <i data-lucide="plus"></i> Registrar Hábitos ESG
+                            </button>
+                        </div>
+                        
+                        <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                            <!-- Métricas Consolidadas -->
+                            <div class="esg-stats-grid">
+                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Água Diária (Média)</span>
+                                    <span class="stat-value text-success" id="esg-stat-water">0.0 L</span>
+                                </div>
+                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Pegada CO₂ Semanal</span>
+                                    <span class="stat-value" id="esg-stat-co2" style="color: var(--accent);">0.0 Kg</span>
+                                </div>
+                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Refeições Plant-Based</span>
+                                    <span class="stat-value" id="esg-stat-meatless" style="color: var(--warning);">0</span>
+                                </div>
+                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Resíduos Evitados</span>
+                                    <span class="stat-value" id="esg-stat-waste" style="color: var(--text-muted);">0</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Histórico de Sustentabilidade -->
+                            <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015);">
+                                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Histórico de Ações Sustentáveis</h4>
+                                <div class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
+                                    <table class="finance-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                                                <th style="padding: 8px;">Data</th>
+                                                <th style="padding: 8px;">Água (L)</th>
+                                                <th style="padding: 8px;">CO₂ (Kg)</th>
+                                                <th style="padding: 8px;">Sem Carne</th>
+                                                <th style="padding: 8px;">Resíduos</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="esg-history-tbody">
+                                            <!-- Preenchido dinamicamente via JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ABA: Mind Flies -->
+            <div id="tab-mind" class="tab-content">
+                <section class="tasks-column" style="height: 100%;">
+                    <div class="glass-panel tasks-panel" style="display: flex; flex-direction: column; height: 100%;">
+                        <div class="panel-header space-between">
+                            <div class="title-with-icon">
+                                <i data-lucide="brain" class="text-primary"></i>
+                                <h2>🧠 Mind Flies</h2>
+                            </div>
+                            <button class="btn-primary" onclick="openMindLogModal()">
+                                <i data-lucide="plus"></i> Novo Registro Mental
+                            </button>
+                        </div>
+                        
+                        <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                            <!-- Resumos de Saúde Mental -->
+                            <div class="esg-stats-grid">
+                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Humor Médio</span>
+                                    <span class="stat-value text-success" id="mind-stat-mood">N/A</span>
+                                </div>
+                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Energia Média</span>
+                                    <span class="stat-value" id="mind-stat-energy" style="color: var(--accent);">N/A</span>
+                                </div>
+                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                    <span class="stat-label">Práticas Realizadas</span>
+                                    <span class="stat-value" id="mind-stat-practices" style="color: var(--warning);">0</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Grade de Humor Mensal -->
+                            <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015);">
+                                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Histórico Emocional & Notas</h4>
+                                <div id="mind-history-container" style="display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto; padding-right: 4px;">
+                                    <!-- Inserido dinamicamente via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ABA: Body Flies -->
+            <div id="tab-body" class="tab-content">
+                <section class="tasks-column" style="height: 100%;">
+                    <div class="glass-panel tasks-panel" style="display: flex; flex-direction: column; height: 100%;">
+                        <div class="panel-header space-between">
+                            <div class="title-with-icon">
+                                <i data-lucide="heart" style="color: hsl(0, 80%, 55%);"></i>
+                                <h2>💪 Body Flies</h2>
+                            </div>
+                            <button class="btn-primary" onclick="openBodyLogModal()">
+                                <i data-lucide="plus"></i> Novo Registro Físico
+                            </button>
+                        </div>
+                        
+                        <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;" class="finance-dash-grid">
+                                <!-- Hidratação Card -->
+                                <div class="glass-panel water-tracker-card" style="border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); width: 100%;">
+                                    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Consumo de Água (Hoje)</h4>
+                                    <div class="water-cups-row" id="water-cups-container">
+                                        <!-- Renderizado dinamicamente via JS -->
+                                    </div>
+                                    <div style="font-size: 1.2rem; font-weight: 850; color: hsl(200, 85%, 45%); margin: 8px 0;" id="water-stat-label">0 / 8 copos</div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button class="btn-secondary" onclick="adjustWaterCups(-1)">Remover Copo</button>
+                                        <button class="btn-primary" onclick="adjustWaterCups(1)" style="background: hsl(200, 85%, 45%); border-color: hsl(200, 85%, 45%); color: #fff;">Beber Copo</button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Sono & Exercícios Stats -->
+                                <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                                    <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Atividade & Sono (Médias)</h4>
+                                    
+                                    <div class="cockpit-metric-row">
+                                        <span>Horas de Sono:</span>
+                                        <span id="body-avg-sleep" class="cockpit-metric-value">0.0h</span>
+                                    </div>
+                                    <div class="cockpit-metric-row">
+                                        <span>Qualidade de Sono:</span>
+                                        <span id="body-avg-sleep-quality" class="cockpit-metric-value">N/A</span>
+                                    </div>
+                                    <div class="cockpit-metric-row">
+                                        <span>Tempo de Exercício:</span>
+                                        <span id="body-avg-exercise" class="cockpit-metric-value">0 min</span>
+                                    </div>
+                                    <div class="cockpit-metric-row">
+                                        <span>Último Peso:</span>
+                                        <span id="body-last-weight" class="cockpit-metric-value">0.0 Kg</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Histórico Físico Completo -->
+                            <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015);">
+                                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Registro de Sono & Atividades Físicas</h4>
+                                <div class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
+                                    <table class="finance-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                                                <th style="padding: 8px;">Data</th>
+                                                <th style="padding: 8px;">Sono</th>
+                                                <th style="padding: 8px;">Qualidade</th>
+                                                <th style="padding: 8px;">Exercício</th>
+                                                <th style="padding: 8px;">Peso</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="body-history-tbody">
+                                            <!-- Preenchido dinamicamente via JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ABA 3: Money Flies -->
             <div id="tab-finances" class="tab-content">
                 <section class="tasks-column" style="height: 100%;">
                     <div class="glass-panel tasks-panel" style="display: flex; flex-direction: column; height: 100%;">
                         <div class="panel-header space-between" style="border-bottom: none; padding-bottom: 0;">
                             <div class="title-with-icon">
                                 <i data-lucide="wallet" class="text-accent"></i>
-                                <h2>Controle Financeiro</h2>
+                                <h2>Money Flies</h2>
                             </div>
                             <div class="flex-end" style="gap: 8px;">
                                 <button class="btn-secondary" onclick="openCreditCardSettingsModal()" title="Configurações de Cartão" style="padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
-                                    <i data-lucide="credit-card" style="width: 16px; height: 16px;"></i> Ajustar Limite
+                                    <i data-lucide="credit-card" style="width: 16px; height: 16px;"></i> Gerenciar Cartões
                                 </button>
                                 <button class="btn-primary" onclick="openFinanceTransactionModal()">
                                     <i data-lucide="plus"></i> Novo Lançamento
@@ -339,7 +813,7 @@
                             </div>
                         </div>
 
-                        <!-- Sub-abas do Controle Financeiro -->
+                        <!-- Sub-abas do Money Flies -->
                         <div class="finance-sub-tabs" style="display: flex; gap: 6px; margin: 12px 0 16px 0; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; overflow-x: auto; width: 100%;">
                             <button class="sub-tab-btn active" onclick="switchFinanceSubTab('dashboard')">Dashboard</button>
                             <button class="sub-tab-btn" onclick="switchFinanceSubTab('cash')">Gastos à Vista</button>
@@ -389,28 +863,66 @@
                                 </div>
 
                                 <!-- Uso de Limite do Cartão Card -->
-                                <div class="glass-panel" style="padding: 16px; gap: 8px; box-shadow: none; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.02);">
-                                    <div class="space-between" style="width: 100%;">
-                                        <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Uso do Limite do Cartão</h4>
-                                        <span style="font-size: 0.75rem; color: var(--text-muted);" id="fin-dash-limit-label">R$ 0,00 / R$ 0,00</span>
-                                    </div>
-                                    <div class="task-progress-bar" style="height: 12px; margin-top: 12px; background: rgba(255,255,255,0.05);">
-                                        <div class="task-progress-fill" id="fin-dash-limit-progress" style="width: 0%; background: linear-gradient(90deg, var(--accent) 0%, var(--danger) 100%);"></div>
-                                    </div>
-                                    <div class="space-between" style="width: 100%; font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">
-                                        <span id="fin-dash-limit-percent">0% utilizado</span>
-                                        <span id="fin-dash-limit-remaining">R$ 0,00 disponível</span>
+                                <div class="glass-panel" style="padding: 16px; gap: 8px; box-shadow: none; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); display: flex; flex-direction: column;">
+                                    <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">Uso de Limite dos Cartões</h4>
+                                    <div id="fin-dash-limits-container" style="display: flex; flex-direction: column; gap: 12px; flex: 1; justify-content: center;">
+                                        <!-- Inserido dinamicamente para cada cartão via JS -->
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Gráfico de Gastos por Categoria -->
-                            <div class="glass-panel" style="padding: 16px; min-height: 220px; box-shadow: none; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.02);">
+                            <div class="glass-panel" style="padding: 16px; min-height: 220px; box-shadow: none; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); margin-bottom: 16px;">
                                 <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Distribuição de Gastos da Referência</h4>
-                                <div class="chart-container" style="max-height: 150px;">
+                                <div class="chart-container" onclick="expandChart('financeCategoryChart', 'Distribuição de Gastos da Referência')" style="max-height: 150px; cursor: pointer;">
                                     <canvas id="financeCategoryChart"></canvas>
                                 </div>
                                 <div id="finance-category-legend" class="chart-legend" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px;"></div>
+                            </div>
+
+                            <!-- Orçamentos e Metas de Economia Grid -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;" class="finance-dash-grid">
+                                <!-- Orçamentos por Categoria Card -->
+                                <div class="glass-panel" style="padding: 16px; box-shadow: none; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); display: flex; flex-direction: column;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                        <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin: 0;">Orçamentos por Categoria</h4>
+                                        <button class="btn-secondary" onclick="openBudgetsModal()" style="padding: 4px 8px; font-size: 0.75rem; width: auto; height: auto; min-height: 0; line-height: 1;">Definir</button>
+                                    </div>
+                                    <div id="fin-dash-budgets-container" style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                                        <!-- Preenchido dinamicamente via JS -->
+                                    </div>
+                                </div>
+
+                                <!-- Metas de Economia Card -->
+                                <div class="glass-panel" style="padding: 16px; box-shadow: none; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); display: flex; flex-direction: column;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                        <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin: 0;">Metas de Economia</h4>
+                                        <button class="btn-primary" onclick="openNewGoalModal()" style="padding: 4px 8px; font-size: 0.75rem; width: auto; height: auto; min-height: 0; line-height: 1; display: flex; align-items: center; gap: 4px;"><i data-lucide="plus" style="width: 10px; height: 10px;"></i> Nova</button>
+                                    </div>
+                                    <div id="fin-dash-goals-container" style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                                        <!-- Preenchido dinamicamente via JS -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Projeção de Fluxo de Caixa (3 Meses) -->
+                            <div class="glass-panel" style="padding: 16px; margin-bottom: 16px; box-shadow: none; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.02);">
+                                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Projeção de Fluxo de Caixa (Próximos 3 Meses)</h4>
+                                <div class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
+                                    <table class="finance-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                                                <th style="padding: 8px;">Mês</th>
+                                                <th style="padding: 8px;">Receitas Previstas</th>
+                                                <th style="padding: 8px;">Despesas Previstas</th>
+                                                <th style="padding: 8px;">Saldo Projetado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="fin-dash-cashflow-projection-body">
+                                            <!-- Preenchido dinamicamente via JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
 
@@ -440,6 +952,19 @@
 
                         <!-- SUB-ABA 3: Cartão de Crédito -->
                         <div id="finance-subtab-card" class="finance-subtab-content style-scroll" style="flex: 1; overflow-y: auto; display: none; padding-right: 4px;">
+                            <!-- Seletor do Cartão Ativo -->
+                             <div class="card-select-header" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 8px 16px; border-radius: var(--border-radius-md); margin-bottom: 12px; width: 100%; gap: 12px; flex-wrap: wrap;">
+                                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                     <label for="finance-card-view-select" style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Cartão Selecionado:</label>
+                                     <select id="finance-card-view-select" class="form-control" onchange="renderFinanceCard()" style="width: auto; min-width: 180px; padding: 4px 10px; font-size: 0.85rem; height: 32px; border-radius: var(--border-radius-sm); background: var(--panel-bg); border-color: var(--panel-border);">
+                                         <!-- Preenchido via JS -->
+                                     </select>
+                                 </div>
+                                 <button type="button" class="btn-secondary btn-sm" onclick="openCreditCardSettingsModal()" style="padding: 4px 10px; font-size: 0.75rem; height: 32px; display: flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
+                                     <i data-lucide="plus" style="width: 12px; height: 12px;"></i> Gerenciar Cartões
+                                 </button>
+                             </div>
+
                             <!-- Resumo da fatura do mês -->
                             <div class="fatura-info-panel" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 12px 16px; border-radius: var(--border-radius-md); margin-bottom: 12px; width: 100%;">
                                 <div>
@@ -541,6 +1066,9 @@
                         <div class="panel-header">
                             <i data-lucide="timer" class="text-accent"></i>
                             <h2>Timer de Execução</h2>
+                            <button type="button" class="btn-panel-minimize" id="btn-minimize-timer" onclick="toggleTimerMinimization()" title="Minimizar/Maximizar Painel">
+                                <i data-lucide="minimize-2" style="width: 16px; height: 16px;"></i>
+                            </button>
                         </div>
                         <p class="panel-desc">Escolha uma tarefa pendente e acompanhe seu tempo limite de execução:</p>
                         <div class="timer-content">
@@ -608,58 +1136,157 @@
             <div id="tab-metrics" class="tab-content">
                 <section class="sidebar-column" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%;">
                     <!-- Gráfico de Alocação de Tempo -->
-                    <div class="glass-panel metrics-panel">
-                        <div class="panel-header">
-                            <i data-lucide="pie-chart" class="text-primary"></i>
-                            <h2>Alocação de Tempo</h2>
+                    <div class="glass-panel metrics-panel collapsed" id="card-metric-time">
+                        <div class="panel-header" onclick="toggleMetricCard('card-metric-time')">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="pie-chart" class="text-primary"></i>
+                                <h2>Alocação de Tempo</h2>
+                            </div>
+                            <i data-lucide="chevron-down" class="toggle-icon"></i>
                         </div>
-                        <div class="chart-container">
-                            <canvas id="timeAllocationChart"></canvas>
+                        <div class="card-body-collapsible">
+                            <div class="chart-container" onclick="expandChart('timeAllocationChart', 'Alocação de Tempo')">
+                                <canvas id="timeAllocationChart"></canvas>
+                            </div>
+                            <div id="chart-legend" class="chart-legend"></div>
                         </div>
-                        <div id="chart-legend" class="chart-legend"></div>
                     </div>
 
                     <!-- Gráfico de Prioridades de Tarefas -->
-                    <div class="glass-panel metrics-panel">
-                        <div class="panel-header">
-                            <i data-lucide="bar-chart-horizontal" class="text-success"></i>
-                            <h2>Prioridades das Tarefas</h2>
+                    <div class="glass-panel metrics-panel collapsed" id="card-metric-priority">
+                        <div class="panel-header" onclick="toggleMetricCard('card-metric-priority')">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="bar-chart-horizontal" class="text-success"></i>
+                                <h2>Prioridades das Tarefas</h2>
+                            </div>
+                            <i data-lucide="chevron-down" class="toggle-icon"></i>
                         </div>
-                        <div class="chart-container">
-                            <canvas id="taskPriorityChart"></canvas>
+                        <div class="card-body-collapsible">
+                            <div class="chart-container" onclick="expandChart('taskPriorityChart', 'Prioridades das Tarefas')">
+                                <canvas id="taskPriorityChart"></canvas>
+                            </div>
+                            <div id="priority-chart-legend" class="chart-legend"></div>
                         </div>
-                        <div id="priority-chart-legend" class="chart-legend"></div>
+                    </div>
+                </section>
+
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 24px 0 12px 0; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="wallet" class="text-accent"></i> Métricas Financeiras
+                </h3>
+
+                <section class="sidebar-column" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%;">
+                    <!-- Tabela: Gastos Previstos no Cartão (Próximo Mês) -->
+                    <div class="glass-panel metrics-panel collapsed" id="card-metric-forecast">
+                        <div class="panel-header" onclick="toggleMetricCard('card-metric-forecast')">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="credit-card" class="text-accent"></i>
+                                <h2>Gastos Previstos (Cartão - Próx. Mês)</h2>
+                            </div>
+                            <i data-lucide="chevron-down" class="toggle-icon"></i>
+                        </div>
+                        <div class="card-body-collapsible">
+                            <div id="financial-card-forecast-container" class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
+                                <div class="placeholder-msg">Carregando dados...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela: Despesas Médias Mensais -->
+                    <div class="glass-panel metrics-panel collapsed" id="card-metric-averages">
+                        <div class="panel-header" onclick="toggleMetricCard('card-metric-averages')">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="calculator" class="text-warning"></i>
+                                <h2>Despesas Médias Mensais</h2>
+                            </div>
+                            <i data-lucide="chevron-down" class="toggle-icon"></i>
+                        </div>
+                        <div class="card-body-collapsible">
+                            <div id="financial-averages-container" class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
+                                <div class="placeholder-msg">Carregando dados...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela: Gastos Totais x Receitas Totais (Histórico) -->
+                    <div class="glass-panel metrics-panel collapsed" id="card-metric-history">
+                        <div class="panel-header" onclick="toggleMetricCard('card-metric-history')">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="arrow-up-down" class="text-success"></i>
+                                <h2>Gastos x Receitas Histórico</h2>
+                            </div>
+                            <i data-lucide="chevron-down" class="toggle-icon"></i>
+                        </div>
+                        <div class="card-body-collapsible">
+                            <div id="financial-history-container" class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
+                                <div class="placeholder-msg">Carregando dados...</div>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </div>
 
             <!-- ABA: Ajustes & Segurança -->
             <div id="tab-settings" class="tab-content">
-                <section class="sidebar-column" style="width: 100%; max-width: 600px; margin: 0 auto;">
+                <section class="sidebar-column" style="width: 100%; max-width: 500px; margin: 0 auto;">
                     <!-- Configurações de Segurança e Backup -->
-                    <div class="glass-panel backup-panel">
-                        <div class="panel-header">
+                    <div class="glass-panel backup-panel" style="padding: 24px 28px;">
+                        <div class="panel-header" style="margin-bottom: 12px;">
                             <i data-lucide="shield-check" class="text-primary"></i>
                             <h2>Segurança & Backup Local</h2>
                         </div>
-                        <p class="panel-desc">Proteja seus dados contra perdas ou exporte para outro dispositivo:</p>
-                        <div class="backup-actions" style="display: flex; gap: 12px; margin-top: 4px;">
-                            <button class="btn-secondary" onclick="exportBackup()" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 10px 14px;">
+                        <p class="panel-desc" style="margin-bottom: 16px;">Proteja seus dados contra perdas ou exporte para outro dispositivo:</p>
+                        <div class="backup-actions" style="display: flex; gap: 12px; margin-bottom: 24px;">
+                            <button class="btn-secondary" onclick="exportBackup()" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 12px 16px; font-size: 0.9rem; font-weight: 700; border-radius: var(--border-radius-md);">
                                 <i data-lucide="download" style="width:16px; height:16px;"></i> Exportar
                             </button>
-                            <label class="btn-primary" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; cursor: pointer; margin: 0; padding: 10px 14px; font-size: 0.9rem; font-weight: 600; border-radius: var(--border-radius-md); box-shadow: none;">
+                            <label class="btn-primary" style="flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; cursor: pointer; margin: 0; padding: 12px 16px; font-size: 0.9rem; font-weight: 700; border-radius: var(--border-radius-md); box-shadow: none;">
                                 <i data-lucide="upload" style="width:16px; height:16px;"></i> Importar
                                 <input type="file" id="input-import-backup" accept=".json" onchange="importBackup(event)" style="display: none;">
                             </label>
                         </div>
-                        <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; margin-top: 4px;">
+                        <!-- Sincronização Inteligente Offline -->
+                        <div class="sync-panel-section" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px;">
+                            <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <i data-lucide="refresh-cw" style="width: 16px; height: 16px; color: var(--accent);"></i>
+                                Sincronização entre Notebook e Celular
+                            </h3>
+                            <p class="panel-desc" style="margin-bottom: 16px; font-size: 0.75rem; line-height: 1.45;">
+                                Mescle dados entre seus dispositivos de forma offline. O sistema compara os registros locais e do arquivo e mantém as versões mais recentes (Smart Merge).
+                            </p>
+                            <div class="sync-buttons-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <button type="button" class="btn-secondary" onclick="exportSyncBackup()" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; font-size: 0.9rem; font-weight: 700; border-radius: var(--border-radius-md);">
+                                    <i data-lucide="share" style="width: 16px; height: 16px;"></i> Exportar p/ Sync
+                                </button>
+                                <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; margin: 0; padding: 12px 16px; font-size: 0.9rem; font-weight: 700; border-radius: var(--border-radius-md); box-shadow: none;">
+                                    <i data-lucide="combine" style="width: 16px; height: 16px;"></i> Mesclar Dados
+                                    <input type="file" id="input-import-sync" accept=".json" onchange="importSyncMerge(event)" style="display: none;">
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; margin-top: 24px;">
                             <span>Criptografia de Acesso</span>
-                            <button class="btn-secondary btn-sm" onclick="changeAccessPassword()" style="padding: 4px 10px; font-size: 0.7rem;">Alterar Senha</button>
+                            <button type="button" class="btn-secondary btn-sm" onclick="changeAccessPassword()" style="padding: 6px 12px; font-size: 0.75rem; font-weight: 700; border-radius: var(--border-radius-sm);">Alterar Senha</button>
                         </div>
                     </div>
                 </section>
             </div>
         </main>
+    </div>
+
+    <!-- MODAL: Expandir Gráfico -->
+    <div id="modal-expand-chart" class="modal-overlay">
+        <div class="modal-content glass-card" style="max-width: 600px; width: 90%; max-height: 80vh; display: flex; flex-direction: column; gap: 16px; padding: 24px; position: relative;">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h3 id="expanded-chart-title" style="margin: 0;">Gráfico Expandido</h3>
+                <button type="button" class="btn-close-modal" onclick="closeExpandedChartModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="chart-container" style="flex: 1; min-height: 250px; position: relative; display: flex; justify-content: center; align-items: center;">
+                <canvas id="expandedChartCanvas"></canvas>
+            </div>
+            <div id="expanded-chart-legend" class="chart-legend" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; width: 100%;"></div>
+        </div>
     </div>
 
     <!-- MODAL: Adicionar/Editar Bloqueio de Horário -->
@@ -830,13 +1457,17 @@
 
     <!-- BOTTOM NAVIGATION (Visível apenas no mobile) -->
     <nav class="bottom-nav">
-        <button class="bottom-nav-link active" id="btn-nav-agenda" onclick="switchMainTab('tab-agenda')">
-            <i data-lucide="calendar"></i>
-            <span>Agenda</span>
+        <button class="bottom-nav-link active" id="btn-nav-home" onclick="switchMainTab('tab-home')">
+            <i data-lucide="home"></i>
+            <span>Home</span>
         </button>
-        <button class="bottom-nav-link" id="btn-nav-tarefas" onclick="switchMainTab('tab-tarefas')">
-            <i data-lucide="check-square"></i>
-            <span>Tarefas</span>
+        <button class="bottom-nav-link" id="btn-nav-timeflies" onclick="switchMainTab('tab-timeflies')">
+            <i data-lucide="clock"></i>
+            <span>Time Flies</span>
+        </button>
+        <button class="bottom-nav-link" id="btn-nav-projects" onclick="switchMainTab('tab-projects')">
+            <i data-lucide="graduation-cap"></i>
+            <span>Learn Flies</span>
         </button>
         <button class="bottom-nav-link" id="btn-nav-timer" onclick="switchMainTab('tab-timer')">
             <i data-lucide="timer"></i>
@@ -844,7 +1475,7 @@
         </button>
         <button class="bottom-nav-link" id="btn-nav-finances" onclick="switchMainTab('tab-finances')">
             <i data-lucide="wallet"></i>
-            <span>Finanças</span>
+            <span>Money Flies</span>
         </button>
         <button class="bottom-nav-link" id="btn-nav-more" onclick="toggleDrawer(true)">
             <i data-lucide="menu"></i>
@@ -1050,6 +1681,21 @@
                         <input type="number" id="fixed-expense-due-day" class="form-control" placeholder="Ex: 10" min="1" max="31" required>
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fixed-expense-method">Forma de Pagamento</label>
+                        <select id="fixed-expense-method" class="form-control" onchange="toggleFixedExpenseMethodFields()">
+                            <option value="cash">Dinheiro / Débito</option>
+                            <option value="card">Cartão de Crédito</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="fixed-expense-card-wrapper" style="display: none;">
+                        <label for="fixed-expense-card-id">Selecione o Cartão</label>
+                        <select id="fixed-expense-card-id" class="form-control">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label for="fixed-expense-desc">Observação (Opcional)</label>
                     <input type="text" id="fixed-expense-desc" class="form-control" placeholder="Ex: Dividido com companheiro de quarto">
@@ -1067,16 +1713,27 @@
 
     <!-- MODAL: Ajustar Cartão de Crédito -->
     <div id="modal-credit-card-settings" class="modal-overlay">
-        <div class="modal-content glass-card">
+        <div class="modal-content glass-card" style="max-width: 500px;">
             <div class="bottom-sheet-grabber"></div>
             <div class="modal-header">
-                <h3>Configurações do Cartão Principal</h3>
+                <h3>Gerenciar Cartões de Crédito</h3>
                 <button type="button" class="btn-close-modal" onclick="closeCreditCardSettingsModal()"><i data-lucide="x"></i></button>
             </div>
-            <form id="credit-card-settings-form" onsubmit="saveCreditCardSettings(event)">
+            
+            <!-- Lista de cartões de crédito atuais -->
+            <div id="modal-card-list-wrapper" style="margin-bottom: 20px;">
+                <h4 style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Cartões Cadastrados</h4>
+                <div id="modal-credit-cards-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+            
+            <form id="credit-card-settings-form" onsubmit="saveCreditCardSettings(event)" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px;">
+                <h4 id="card-form-title" style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Cadastrar Novo Cartão</h4>
+                <input type="hidden" id="card-settings-id">
                 <div class="form-group">
                     <label for="card-settings-name">Nome do Cartão</label>
-                    <input type="text" id="card-settings-name" class="form-control" placeholder="Ex: Cartão Principal" required value="Cartão Principal">
+                    <input type="text" id="card-settings-name" class="form-control" placeholder="Ex: Nubank, Inter" required>
                 </div>
                 <div class="form-group">
                     <label for="card-settings-limit">Limite Total (R$)</label>
@@ -1093,9 +1750,9 @@
                     </div>
                 </div>
                 <div class="modal-actions" style="margin-top: 20px;">
-                    <div class="flex-end">
-                        <button type="button" class="btn-secondary" onclick="closeCreditCardSettingsModal()">Cancelar</button>
-                        <button type="submit" class="btn-accent">Salvar Ajustes</button>
+                    <div class="flex-end" style="gap: 8px;">
+                        <button type="button" class="btn-secondary" id="btn-cancel-card-edit" onclick="resetCreditCardForm()" style="display: none;">Cancelar Edição</button>
+                        <button type="submit" class="btn-accent" id="btn-submit-card">Salvar Cartão</button>
                     </div>
                 </div>
             </form>
@@ -1126,10 +1783,331 @@
         </div>
     </div>
 
+    <!-- MODAL: Definir Orçamentos por Categoria -->
+    <div id="modal-money-budgets" class="modal-overlay">
+        <div class="modal-content glass-card" style="max-width: 450px;">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3>Definir Orçamentos Mensais</h3>
+                <button type="button" class="btn-close-modal" onclick="closeBudgetsModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="money-budgets-form" onsubmit="saveBudgets(event)">
+                <div style="max-height: 300px; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label for="budget-alimentacao">Alimentação (R$)</label>
+                        <input type="number" id="budget-alimentacao" class="form-control" placeholder="Ex: 800" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-transporte">Transporte (R$)</label>
+                        <input type="number" id="budget-transporte" class="form-control" placeholder="Ex: 300" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-lazer">Lazer / Shopping (R$)</label>
+                        <input type="number" id="budget-lazer" class="form-control" placeholder="Ex: 400" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-saude">Saúde & Bem-estar (R$)</label>
+                        <input type="number" id="budget-saude" class="form-control" placeholder="Ex: 200" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-casa">Casa / Contas (R$)</label>
+                        <input type="number" id="budget-casa" class="form-control" placeholder="Ex: 1500" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-faculdade">Educação / Faculdade (R$)</label>
+                        <input type="number" id="budget-faculdade" class="form-control" placeholder="Ex: 500" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-outros">Outros (R$)</label>
+                        <input type="number" id="budget-outros" class="form-control" placeholder="Ex: 300" min="0" step="0.01">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeBudgetsModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar Orçamentos</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Gerenciar Meta de Economia -->
+    <div id="modal-money-goal" class="modal-overlay">
+        <div class="modal-content glass-card" style="max-width: 450px;">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3 id="money-goal-modal-title">Nova Meta de Economia</h3>
+                <button type="button" class="btn-close-modal" onclick="closeMoneyGoalModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="money-goal-form" onsubmit="saveMoneyGoal(event)">
+                <input type="hidden" id="money-goal-id">
+                <div class="form-group">
+                    <label for="money-goal-name">Nome da Meta</label>
+                    <input type="text" id="money-goal-name" class="form-control" placeholder="Ex: Reserva de Emergência, Viagem" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="money-goal-target">Valor Alvo (R$)</label>
+                        <input type="number" id="money-goal-target" class="form-control" placeholder="10000.00" min="1" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="money-goal-current">Valor Já Guardado (R$)</label>
+                        <input type="number" id="money-goal-current" class="form-control" placeholder="0.00" min="0" step="0.01" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="money-goal-deadline">Data Limite (Prazo)</label>
+                    <input type="date" id="money-goal-deadline" class="form-control" required>
+                </div>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button type="button" id="btn-delete-money-goal" class="btn-danger hidden" onclick="deleteMoneyGoal()">Excluir Meta</button>
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeMoneyGoalModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar Meta</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Registrar Hábitos ESG -->
+    <div id="modal-esg-log" class="modal-overlay">
+        <div class="modal-content glass-card" style="max-width: 450px;">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3>Registrar Hábitos ESG</h3>
+                <button type="button" class="btn-close-modal" onclick="closeEsgLogModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="esg-log-form" onsubmit="saveEsgLog(event)">
+                <div class="form-group">
+                    <label for="esg-log-date">Data do Registro</label>
+                    <input type="date" id="esg-log-date" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="esg-log-water">Consumo Direto de Água (Litros)</label>
+                    <input type="number" id="esg-log-water" class="form-control" placeholder="Ex: 2.0" min="0" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label>Quilômetros rodados hoje (CO₂):</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div>
+                            <label style="font-size: 0.72rem; color: var(--text-muted);">Carro (Combustão)</label>
+                            <input type="number" id="esg-log-car" class="form-control" placeholder="Km" min="0" required>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.72rem; color: var(--text-muted);">Ônibus / Metrô</label>
+                            <input type="number" id="esg-log-public" class="form-control" placeholder="Km" min="0" required>
+                        </div>
+                    </div>
+                    <div style="margin-top: 8px;">
+                        <label style="font-size: 0.72rem; color: var(--text-muted);">Caminhada / Bicicleta</label>
+                        <input type="number" id="esg-log-active" class="form-control" placeholder="Km" min="0" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Alimentação & Resíduos</label>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label class="checkbox-chip" style="font-size: 0.8rem; padding: 10px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--panel-border); border-radius: var(--border-radius-md); width: 100%;">
+                            <input type="checkbox" id="esg-log-meatless" style="margin: 0;"> Dia Sem Carne (Plant-based)
+                        </label>
+                        <label class="checkbox-chip" style="font-size: 0.8rem; padding: 10px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--panel-border); border-radius: var(--border-radius-md); width: 100%;">
+                            <input type="checkbox" id="esg-log-recycled" style="margin: 0;"> Separou Lixo Reciclável
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="esg-log-plastic">Garrafas Plásticas Descartáveis Evitadas</label>
+                    <input type="number" id="esg-log-plastic" class="form-control" placeholder="Ex: 2" min="0" required>
+                </div>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeEsgLogModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar Registro</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Novo Registro Mental -->
+    <div id="modal-mind-log" class="modal-overlay">
+        <div class="modal-content glass-card" style="max-width: 450px;">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3>Novo Registro Mental</h3>
+                <button type="button" class="btn-close-modal" onclick="closeMindLogModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="mind-log-form" onsubmit="saveMindLog(event)">
+                <div class="form-group">
+                    <label for="mind-log-date">Data do Registro</label>
+                    <input type="date" id="mind-log-date" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Como você avalia seu Humor?</label>
+                    <div class="mood-selector-container">
+                        <button type="button" class="mood-emoji-btn" data-mood="1" title="Terrível">😫</button>
+                        <button type="button" class="mood-emoji-btn" data-mood="2" title="Ruim">😔</button>
+                        <button type="button" class="mood-emoji-btn" data-mood="3" title="Neutro">😐</button>
+                        <button type="button" class="mood-emoji-btn" data-mood="4" title="Bom">😊</button>
+                        <button type="button" class="mood-emoji-btn" data-mood="5" title="Excelente">🤩</button>
+                    </div>
+                    <input type="hidden" id="mind-log-mood" required>
+                </div>
+                <div class="form-group">
+                    <label for="mind-log-energy">Nível de Energia (1 a 5)</label>
+                    <input type="range" id="mind-log-energy" min="1" max="5" class="form-control" style="padding: 6px 0; accent-color: var(--primary);" required>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted); margin-top: 4px;">
+                        <span>Muito Esgotado</span>
+                        <span>Normal</span>
+                        <span>Altamente Energizado</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Práticas Conscientes Realizadas</label>
+                    <div class="practices-grid">
+                        <label class="checkbox-chip" style="font-size: 0.8rem; padding: 10px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--panel-border); border-radius: var(--border-radius-md); width: 100%;">
+                            <input type="checkbox" id="practice-meditation" value="Meditação" style="margin: 0;"> 🧘 Meditação
+                        </label>
+                        <label class="checkbox-chip" style="font-size: 0.8rem; padding: 10px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--panel-border); border-radius: var(--border-radius-md); width: 100%;">
+                            <input type="checkbox" id="practice-breathing" value="Respiração" style="margin: 0;"> 💨 Respiração
+                        </label>
+                        <label class="checkbox-chip" style="font-size: 0.8rem; padding: 10px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--panel-border); border-radius: var(--border-radius-md); width: 100%;">
+                            <input type="checkbox" id="practice-screens" value="Sem Telas" style="margin: 0;"> 📵 Sem Telas
+                        </label>
+                        <label class="checkbox-chip" style="font-size: 0.8rem; padding: 10px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--panel-border); border-radius: var(--border-radius-md); width: 100%;">
+                            <input type="checkbox" id="practice-nature" value="Natureza" style="margin: 0;"> 🌳 Natureza
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="mind-log-notes">Micro-Diário (Reflexões Rápidas - máx 500 chars)</label>
+                    <textarea id="mind-log-notes" class="form-control" style="height: 90px;" maxlength="500" placeholder="O que marcou o dia de hoje?"></textarea>
+                </div>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeMindLogModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar Check-in</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Novo Registro Físico -->
+    <div id="modal-body-log" class="modal-overlay">
+        <div class="modal-content glass-card" style="max-width: 450px;">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3>Novo Registro Físico</h3>
+                <button type="button" class="btn-close-modal" onclick="closeBodyLogModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="body-log-form" onsubmit="saveBodyLog(event)">
+                <div class="form-group">
+                    <label for="body-log-date">Data do Registro</label>
+                    <input type="date" id="body-log-date" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Período de Sono</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div>
+                            <label style="font-size: 0.72rem; color: var(--text-muted);">Horário de Deitar</label>
+                            <input type="time" id="body-log-sleep-start" class="form-control" required>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.72rem; color: var(--text-muted);">Horário de Acordar</label>
+                            <input type="time" id="body-log-sleep-end" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="body-log-sleep-quality">Qualidade de Sono (1 a 5 estrelas)</label>
+                    <select id="body-log-sleep-quality" class="form-control" required>
+                        <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                        <option value="4">⭐⭐⭐⭐ Muito Bom</option>
+                        <option value="3">⭐⭐⭐ Regular</option>
+                        <option value="2">⭐⭐ Ruim</option>
+                        <option value="1">⭐ Péssimo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Atividade Física</label>
+                    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px;">
+                        <div>
+                            <label style="font-size: 0.72rem; color: var(--text-muted);">Tipo / Exercício</label>
+                            <input type="text" id="body-log-exercise-type" class="form-control" placeholder="Ex: Corrida, Yoga">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.72rem; color: var(--text-muted);">Duração (Minutos)</label>
+                            <input type="number" id="body-log-exercise-duration" class="form-control" placeholder="Minutos" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="body-log-weight">Peso Corporal (Kg - Opcional)</label>
+                    <input type="number" id="body-log-weight" class="form-control" placeholder="Ex: 75.4" min="0" step="0.1">
+                </div>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeBodyLogModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar Registro</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Adicionar Novo Livro -->
+    <div id="modal-learn-book" class="modal-overlay">
+        <div class="modal-content glass-card" style="max-width: 450px;">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3 id="learn-book-modal-title">Novo Livro</h3>
+                <button type="button" class="btn-close-modal" onclick="closeLearnBookModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="learn-book-form" onsubmit="saveLearnBook(event)">
+                <input type="hidden" id="learn-book-id">
+                <div class="form-group">
+                    <label for="learn-book-title">Título do Livro</label>
+                    <input type="text" id="learn-book-title" class="form-control" placeholder="Ex: O Poder do Hábito" required>
+                </div>
+                <div class="form-group">
+                    <label for="learn-book-author">Autor(a)</label>
+                    <input type="text" id="learn-book-author" class="form-control" placeholder="Ex: Charles Duhigg" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="learn-book-total-pages">Total de Páginas</label>
+                        <input type="number" id="learn-book-total-pages" class="form-control" placeholder="Ex: 320" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="learn-book-current-page">Página Atual</label>
+                        <input type="number" id="learn-book-current-page" class="form-control" placeholder="Ex: 0" min="0" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="learn-book-status">Status de Leitura</label>
+                    <select id="learn-book-status" class="form-control" required>
+                        <option value="reading">Lendo</option>
+                        <option value="completed">Concluído</option>
+                        <option value="wishlist">Quero Ler</option>
+                    </select>
+                </div>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button type="button" id="btn-delete-learn-book" class="btn-danger hidden" onclick="deleteLearnBook()">Excluir Livro</button>
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeLearnBookModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Salvar Livro</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Chart.js: versão pinada + bundle minificado -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
     <!-- App -->
-    <script src="app.js?v=8" defer></script>
+    <script src="app.js?v=10" defer></script>
     <!-- Service Worker: cache offline -->
     <script>
         if ('serviceWorker' in navigator) {

@@ -2,6 +2,8 @@
 
 TimeFlies (O Tempo Voa) é um aplicativo local, seguro e offline (PWA) projetado para organizar a rotina diária, bloquear horários na agenda, gerenciar tarefas, monitorar projetos/estudos e realizar o controle financeiro pessoal.
 
+O TimeFlies foi construído com um propósito fundamental: **reduzir o tempo de gerenciamento pessoal e torná-lo extremamente prático**. Ao esvaziar a mente do peso de lembrar de tarefas, prazos e contas, você ganha tranquilidade e foco para cuidar do que realmente importa: a sua saúde física e mental, seus estudos e o seu impacto ao meio ambiente.
+
 Este projeto foi desenvolvido e refinado sob uma arquitetura **agent-first** usando o framework **Google Antigravity**, o que significa que tanto a estrutura do código quanto este manual foram otimizados para a colaboração contínua entre desenvolvedores humanos e agentes de inteligência artificial.
 
 ---
@@ -30,15 +32,16 @@ O TimeFlies foi construído com foco em leveza, privacidade absoluta e alta perf
 
 ---
 
-## 3. Funcionalidades Principais
+## 3. Funcionalidades Principais (Flies Suit)
 
-1. **Agenda Diária (Horários):** Bloqueio de intervalos de tempo categorizados (Casa, Trabalho, Faculdade, Comprometido) para visualização clara do dia.
-2. **Minhas Tarefas:** Gerenciador de checklists com painel de prioridades (Alta, Média, Baixa) e filtros de categorias.
-3. **Disciplinas & Projetos:** Acompanhamento de metas de estudos semanais, cálculo de média geral (GPA) e notas de cursos.
-4. **Controle Financeiro:** Dashboard de despesas mensais, fluxo de lançamentos à vista, controle de limite de fatura do cartão de crédito (com cálculo automático de parcelamento) e despesas fixas.
-5. **Timer de Foco:** Pomodoro adaptativo associado a tarefas pendentes com alertas integrados.
-6. **Assistente Smart Fit:** Algoritmo que analisa sua agenda diária e sugere automaticamente as melhores janelas de horários livres para realizar tarefas pendentes.
-7. **Segurança Local:** Tela de bloqueio por senha local com armazenamento criptografado no navegador.
+1. **⏰ Time Flies (Agenda & Tarefas):** Centralização unificada da agenda de horários diários (com bloqueio de intervalos) e da lista de tarefas (checklist) com visualizações por prioridade e categoria.
+2. **💰 Money Flies (Controle Financeiro):** Dashboard de despesas, receitas, fluxo de lançamentos à vista, controle de limite e parcelas do cartão de crédito e despesas fixas recorrentes.
+3. **📚 Learn Flies (Estudos & Biblioteca):** Gerenciamento acadêmico com grade de projetos (GPA), controle de leitura por páginas de livros e estudo de idiomas com contador de streak.
+4. **🌱 ESG Flies (Sustentabilidade):** Registro diário simplificado de práticas ecológicas, monitoramento de consumo de água, contagem de sacolas/plásticos evitados e cálculo de emissões de CO₂ baseada no meio de transporte utilizado.
+5. **🧠 Mind Flies (Saúde Mental):** Check-in de humor por emojis, nível de energia, micro-diário descritivo e registro de hábitos conscientes (Meditação, Respiração, Sem Telas).
+6. **💪 Body Flies (Saúde Física):** Copos d'água interativos de 250ml para hidratação diária, qualidade e média de horas de sono, exercícios físicos realizados e histórico de peso.
+7. **🔄 Sincronização Inteligente Offline:** Exportação e importação manual via arquivos JSON com resolução de conflitos temporais (Smart Merge) para sincronia offline entre Notebook e Celular.
+8. **Timer de Foco & Assistente Smart Fit:** Pomodoro adaptativo vinculado a tarefas e assistente que sugere automaticamente janelas livres em sua agenda para realizar tarefas pendentes.
 
 ---
 
