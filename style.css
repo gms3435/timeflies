@@ -1615,15 +1615,8 @@ textarea.form-control {
         width: auto;
     }
     
-    .logo-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: var(--border-radius-sm);
-    }
-    
-    .logo-icon i {
-        width: 18px;
-        height: 18px;
+    .app-header .logo-icon {
+        display: none !important;
     }
     
     .header-logo h1 {
@@ -2042,15 +2035,8 @@ textarea.form-control {
         width: auto;
     }
     
-    .logo-icon {
-        width: 30px;
-        height: 30px;
-        border-radius: var(--border-radius-sm);
-    }
-    
-    .logo-icon i {
-        width: 14px;
-        height: 14px;
+    .app-header .logo-icon {
+        display: none !important;
     }
     
     .header-logo h1 {
