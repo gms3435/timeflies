@@ -1631,7 +1631,7 @@ textarea.form-control {
     }
     
     .subtitle {
-        font-size: 0.7rem;
+        display: none !important;
     }
     
     .header-actions {
