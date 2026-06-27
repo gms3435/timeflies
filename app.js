@@ -1577,12 +1577,18 @@ function renderHeaderStats() {
 
     const freeMins = 1440 - occupiedMins;
     
-    elements.statsCommittedHours.textContent = `${(occupiedMins / 60).toFixed(1)}h`;
-    elements.statsFreeHours.textContent = `${(freeMins / 60).toFixed(1)}h`;
+    document.querySelectorAll('.stats-committed-hours').forEach(el => {
+        el.textContent = `${(occupiedMins / 60).toFixed(1)}h`;
+    });
+    document.querySelectorAll('.stats-free-hours').forEach(el => {
+        el.textContent = `${(freeMins / 60).toFixed(1)}h`;
+    });
     
     const totalTasks = state.tasks.length;
     const completedTasks = state.tasks.filter(t => t.completed).length;
-    elements.statsTasksCompleted.textContent = `${completedTasks}/${totalTasks}`;
+    document.querySelectorAll('.stats-tasks-completed').forEach(el => {
+        el.textContent = `${completedTasks}/${totalTasks}`;
+    });
 }
 
 function renderAssistantDropdown() {

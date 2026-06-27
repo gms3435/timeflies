@@ -85,15 +85,15 @@
             <div class="quick-stats">
                 <div class="stat-card">
                     <span class="stat-label">Comprometido</span>
-                    <span class="stat-value" id="stats-committed-hours">0.0h</span>
+                    <span class="stat-value stats-committed-hours" id="stats-committed-hours">0.0h</span>
                 </div>
                 <div class="stat-card">
                     <span class="stat-label">Livre Hoje</span>
-                    <span class="stat-value text-success" id="stats-free-hours">24.0h</span>
+                    <span class="stat-value text-success stats-free-hours" id="stats-free-hours">24.0h</span>
                 </div>
                 <div class="stat-card">
                     <span class="stat-label">Tarefas</span>
-                    <span class="stat-value" id="stats-tasks-completed">0/0</span>
+                    <span class="stat-value stats-tasks-completed" id="stats-tasks-completed">0/0</span>
                 </div>
             </div>
 
@@ -111,9 +111,6 @@
                 </button>
                 <button class="btn-secondary btn-trigger-add-block header-quick-btn" title="Bloquear Horário">
                     <i data-lucide="calendar-plus"></i> <span>Bloquear Horário</span>
-                </button>
-                <button id="btn-reset-data" class="btn-icon" title="Limpar e Reiniciar Dados" style="color: var(--danger); border-color: rgba(220, 38, 38, 0.2);">
-                    <i data-lucide="trash-2"></i>
                 </button>
                 <button id="btn-toggle-alarms" class="btn-icon" title="Silenciar/Ativar Alarmes de Agenda">
                     <i data-lucide="bell" class="bell-on-icon"></i>
@@ -403,6 +400,22 @@
                                 <button class="btn-primary" id="btn-timeflies-action" style="padding: 10px 16px;">
                                     <i data-lucide="plus"></i> Novo
                                 </button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Stats para Mobile -->
+                        <div class="quick-stats timeflies-quick-stats">
+                            <div class="stat-card">
+                                <span class="stat-label">Comprometido</span>
+                                <span class="stat-value stats-committed-hours">0.0h</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-label">Livre Hoje</span>
+                                <span class="stat-value text-success stats-free-hours">24.0h</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-label">Tarefas</span>
+                                <span class="stat-value stats-tasks-completed">0/0</span>
                             </div>
                         </div>
 
@@ -1267,6 +1280,12 @@
                         <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; margin-top: 24px;">
                             <span>Criptografia de Acesso</span>
                             <button type="button" class="btn-secondary btn-sm" onclick="changeAccessPassword()" style="padding: 6px 12px; font-size: 0.75rem; font-weight: 700; border-radius: var(--border-radius-sm);">Alterar Senha</button>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; margin-top: 16px;">
+                            <span>Excluir Todos os Dados</span>
+                            <button id="btn-reset-data" type="button" class="btn-secondary btn-sm" title="Limpar e Reiniciar Dados" style="padding: 6px 12px; font-size: 0.75rem; font-weight: 700; border-radius: var(--border-radius-sm); color: var(--danger); border-color: rgba(220, 38, 38, 0.2); display: flex; align-items: center; gap: 4px;">
+                                <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Limpar Dados
+                            </button>
                         </div>
                     </div>
                 </section>

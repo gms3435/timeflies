@@ -294,6 +294,10 @@ body {
     justify-self: center;
 }
 
+.timeflies-quick-stats {
+    display: none;
+}
+
 .stat-card {
     display: flex;
     flex-direction: column;
@@ -1594,18 +1598,14 @@ textarea.form-control {
     
     /* 3. Header adjustment */
     .app-header {
-        display: grid;
-        grid-template-areas: 
-            "logo actions"
-            "stats stats";
-        grid-template-columns: 1fr auto;
-        gap: 14px 8px;
-        padding: 12px 14px;
+        display: flex;
+        justify-content: space-between;
         align-items: center;
+        gap: 8px;
+        padding: 12px 14px;
     }
     
     .header-logo {
-        grid-area: logo;
         display: flex;
         align-items: center;
         gap: 10px;
@@ -1632,7 +1632,6 @@ textarea.form-control {
     }
     
     .header-actions {
-        grid-area: actions;
         display: flex;
         justify-content: flex-end;
         gap: 8px;
@@ -1650,12 +1649,17 @@ textarea.form-control {
     }
     
     /* Quick Stats row */
-    .quick-stats {
-        grid-area: stats;
-        display: grid;
+    .app-header .quick-stats {
+        display: none !important;
+    }
+    
+    .timeflies-quick-stats {
+        display: grid !important;
         grid-template-columns: repeat(3, 1fr);
-        gap: 6px;
+        gap: 8px;
         width: 100%;
+        margin-top: 8px;
+        margin-bottom: 12px;
     }
     
     .stat-card {
@@ -2020,16 +2024,14 @@ textarea.form-control {
     
     /* 2. Header ultra compacto e perfeitamente centralizado */
     .app-header {
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
-        grid-template-areas: none !important;
+        display: flex;
+        justify-content: space-between;
         align-items: center;
         gap: 8px;
         padding: 6px 12px;
     }
     
     .header-logo {
-        grid-area: auto !important;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -2057,7 +2059,6 @@ textarea.form-control {
     }
     
     .header-actions {
-        grid-area: auto !important;
         display: flex;
         justify-self: end;
         gap: 6px;
@@ -2075,14 +2076,18 @@ textarea.form-control {
     }
     
     /* 3. Quick Stats compactas e centralizadas na horizontal */
-    .quick-stats {
-        grid-area: auto !important;
-        display: flex;
+    .app-header .quick-stats {
+        display: none !important;
+    }
+    
+    .timeflies-quick-stats {
+        display: flex !important;
         flex-direction: row;
         align-items: center;
         gap: 6px;
-        justify-self: center;
-        width: auto;
+        width: 100%;
+        margin-top: 4px;
+        margin-bottom: 8px;
     }
     
     .stat-card {
