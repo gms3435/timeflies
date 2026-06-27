@@ -922,6 +922,14 @@ body {
     height: 100%;
 }
 
+.timeflies-subtab-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+}
+
 .category-tabs {
     display: flex;
     gap: 8px;

@@ -6790,7 +6790,7 @@ function switchTimeFliesSubTab(tab) {
     });
     
     const activeTab = document.getElementById(`timeflies-subtab-${tab}`);
-    if (activeTab) activeTab.style.display = 'block';
+    if (activeTab) activeTab.style.display = 'flex';
     
     document.querySelectorAll('.timeflies-sub-tabs .sub-tab-btn').forEach(btn => {
         btn.classList.remove('active');
