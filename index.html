@@ -81,22 +81,6 @@
                 </div>
             </div>
             
-            <!-- Quick Stats -->
-            <div class="quick-stats">
-                <div class="stat-card">
-                    <span class="stat-label">Comprometido</span>
-                    <span class="stat-value stats-committed-hours" id="stats-committed-hours">0.0h</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Livre Hoje</span>
-                    <span class="stat-value text-success stats-free-hours" id="stats-free-hours">24.0h</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Tarefas</span>
-                    <span class="stat-value stats-tasks-completed" id="stats-tasks-completed">0/0</span>
-                </div>
-            </div>
-
             <div class="header-actions">
                 <!-- Mini Timer Widget in Header (Opção B) -->
                 <div id="header-mini-timer" class="header-mini-timer hidden" onclick="switchMainTab('tab-timer')" style="cursor: pointer;">
@@ -106,12 +90,6 @@
                         <i data-lucide="play" style="width: 12px; height: 12px;" id="mini-timer-play-icon"></i>
                     </button>
                 </div>
-                <button class="btn-primary btn-trigger-add-task header-quick-btn" title="Nova Tarefa">
-                    <i data-lucide="plus"></i> <span>Nova Tarefa</span>
-                </button>
-                <button class="btn-secondary btn-trigger-add-block header-quick-btn" title="Bloquear Horário">
-                    <i data-lucide="calendar-plus"></i> <span>Bloquear Horário</span>
-                </button>
                 <button id="btn-toggle-alarms" class="btn-icon" title="Silenciar/Ativar Alarmes de Agenda">
                     <i data-lucide="bell" class="bell-on-icon"></i>
                     <i data-lucide="bell-off" class="bell-off-icon" style="display: none;"></i>
@@ -403,19 +381,19 @@
                             </div>
                         </div>
 
-                        <!-- Quick Stats para Mobile -->
+                        <!-- Quick Stats para Mobile & Notebook -->
                         <div class="quick-stats timeflies-quick-stats">
                             <div class="stat-card">
                                 <span class="stat-label">Comprometido</span>
-                                <span class="stat-value stats-committed-hours">0.0h</span>
+                                <span class="stat-value stats-committed-hours" id="stats-committed-hours">0.0h</span>
                             </div>
                             <div class="stat-card">
                                 <span class="stat-label">Livre Hoje</span>
-                                <span class="stat-value text-success stats-free-hours">24.0h</span>
+                                <span class="stat-value text-success stats-free-hours" id="stats-free-hours">24.0h</span>
                             </div>
                             <div class="stat-card">
                                 <span class="stat-label">Tarefas</span>
-                                <span class="stat-value stats-tasks-completed">0/0</span>
+                                <span class="stat-value stats-tasks-completed" id="stats-tasks-completed">0/0</span>
                             </div>
                         </div>
 
@@ -1240,7 +1218,7 @@
 
             <!-- ABA: Ajustes & Segurança -->
             <div id="tab-settings" class="tab-content">
-                <section class="sidebar-column" style="width: 100%; max-width: 500px; margin: 0 auto;">
+                <section class="sidebar-column" style="width: 100%; max-width: 680px; margin: 0 auto;">
                     <!-- Configurações de Segurança e Backup -->
                     <div class="glass-panel backup-panel" style="padding: 24px 28px;">
                         <div class="panel-header" style="margin-bottom: 12px;">

@@ -237,8 +237,8 @@ body {
 
 /* HEADER */
 .app-header {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 16px;
     padding: 20px 24px;
@@ -295,7 +295,10 @@ body {
 }
 
 .timeflies-quick-stats {
-    display: none;
+    display: flex;
+    gap: 16px;
+    margin: 12px 0 16px 0;
+    width: 100%;
 }
 
 .stat-card {
