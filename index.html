@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;600;700&display=swap" rel="stylesheet">
 
     <!-- CSS do App -->
-    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="style.css?v=11">
 
     <!-- Diagnóstico de Erros JS (inline, sem custo de rede) -->
     <script>
@@ -907,9 +907,11 @@
                                 </div>
 
                                 <!-- Conteúdo do Treino Selecionado -->
-                                <div id="workout-active-content" style="display: flex; flex-direction: column; gap: 10px;">
+                                <div style="max-height: 280px; overflow-y: auto; padding-right: 4px; width: 100%; border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 4px;" class="style-scroll">
+    <div id="workout-active-content" style="display: flex; flex-direction: column; gap: 10px;">
                                     <!-- Exercícios inseridos via JS -->
                                 </div>
+</div>
                             </div>
 
                             <!-- Histórico Físico Completo -->
@@ -2372,7 +2374,7 @@
     <!-- Chart.js: versão pinada + bundle minificado -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
     <!-- App -->
-    <script src="app.js?v=12" defer></script>
+    <script src="app.js?v=13" defer></script>
     <!-- Service Worker: cache offline -->
     <script>
         if ('serviceWorker' in navigator) {
