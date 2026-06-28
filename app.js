@@ -35,9 +35,9 @@ let state = {
         languages: [],
         courses: []
     },
-    esg: { dailyLogs: [], goals: {}, shoppingList: [], freshFoods: [], foodLogs: [] },
+    esg: { dailyLogs: [], goals: {}, shoppingList: [], resourceLogs: [] },
     mind: { dailyLogs: [] },
-    body: { dailyLogs: [], workouts: [], workoutHistory: [] },
+    body: { dailyLogs: [], workouts: [], workoutHistory: [], currentBodySubTab: 'health' },
     flyscore: { history: [] }
 };
 
@@ -243,8 +243,10 @@ function migrateFinanceAndProjectData() {
     }
 
     // 5. Garantir inicialização dos novos módulos TimeFlies 3.0
-    if (!state.esg) state.esg = { dailyLogs: [], goals: {} };
+    if (!state.esg) state.esg = { dailyLogs: [], goals: {}, shoppingList: [], resourceLogs: [] };
     if (!state.esg.dailyLogs) state.esg.dailyLogs = [];
+    if (!state.esg.shoppingList) state.esg.shoppingList = [];
+    if (!state.esg.resourceLogs) state.esg.resourceLogs = [];
     if (!state.esg.goals || typeof state.esg.goals !== 'object') {
         state.esg.goals = { waterTarget: 2, co2Target: 5, meatlessDaysTarget: 4 };
     }
@@ -252,9 +254,12 @@ function migrateFinanceAndProjectData() {
     if (!state.mind) state.mind = { dailyLogs: [] };
     if (!state.mind.dailyLogs) state.mind.dailyLogs = [];
 
-    if (!state.body) state.body = { dailyLogs: [], weightHistory: [] };
+    if (!state.body) state.body = { dailyLogs: [], weightHistory: [], workouts: [], workoutHistory: [], currentBodySubTab: 'health' };
     if (!state.body.dailyLogs) state.body.dailyLogs = [];
     if (!state.body.weightHistory) state.body.weightHistory = [];
+    if (!state.body.workouts) state.body.workouts = [];
+    if (!state.body.workoutHistory) state.body.workoutHistory = [];
+    if (!state.body.currentBodySubTab) state.body.currentBodySubTab = 'health';
 
     if (!state.learn) state.learn = { projects: [], books: [], languages: [], courses: [] };
     if (!state.learn.books) state.learn.books = [];
@@ -530,8 +535,8 @@ function unlockAndInitializeApp(password, isFirstCreation = false) {
                 
                 // Inicialização das novas estruturas de rotina
                 if (!state.esg.shoppingList) state.esg.shoppingList = [];
-                if (!state.esg.freshFoods) state.esg.freshFoods = [];
-                if (!state.esg.foodLogs) state.esg.foodLogs = [];
+                
+                
                 if (!state.body.workouts || state.body.workouts.length === 0) state.body.workouts = getDefaultWorkouts();
                 if (!state.body.workoutHistory) state.body.workoutHistory = [];
                 
@@ -584,8 +589,8 @@ function unlockAndInitializeApp(password, isFirstCreation = false) {
             
             // Inicialização das novas estruturas de rotina
             if (!state.esg.shoppingList) state.esg.shoppingList = [];
-            if (!state.esg.freshFoods) state.esg.freshFoods = [];
-            if (!state.esg.foodLogs) state.esg.foodLogs = [];
+            
+            
             if (!state.body.workouts || state.body.workouts.length === 0) state.body.workouts = getDefaultWorkouts();
             if (!state.body.workoutHistory) state.body.workoutHistory = [];
 
@@ -1163,64 +1168,34 @@ function renderHome() {
         learnProgressEl.style.width = `${flyscores.learn}%`;
     }
 
-    // 3.4. ESG Flies Summary
-    const esgLogs = state.esg.dailyLogs || [];
-    const esgCo2El = document.getElementById('cockpit-esg-co2');
-    const esgMeatlessEl = document.getElementById('cockpit-esg-meatless');
-    const esgPlasticEl = document.getElementById('cockpit-esg-plastic');
-    const esgProgressEl = document.getElementById('cockpit-esg-progress');
+    // 3.4. Sustentabilidade Summary
+    const rLogs = state.esg.resourceLogs || [];
+    const sustEnergyEl = document.getElementById('cockpit-esg-energy');
+    const sustWaterEl = document.getElementById('cockpit-esg-water');
+    const sustFuelGasEl = document.getElementById('cockpit-esg-fuel-gas');
+    const sustProgressEl = document.getElementById('cockpit-esg-progress');
 
-    let weeklyCo2 = 0;
-    let meatlessDays = 0;
-    let plasticAvoided = 0;
-    esgLogs.slice(0, 7).forEach(l => {
-        weeklyCo2 += (parseFloat(l.transportCar) || 0) * 0.18 + (parseFloat(l.transportPublic) || 0) * 0.04;
-        if (l.meatless) meatlessDays++;
-        plasticAvoided += (parseInt(l.plasticAvoided) || 0);
+    let totalEnergy = 0, totalWater = 0, totalGLP = 0, totalFuel = 0;
+    rLogs.slice(0, 5).forEach(l => {
+        totalEnergy += l.energy;
+        totalWater += l.water;
+        totalGLP += l.glp;
+        totalFuel += l.fuel;
     });
+    const rCount = Math.min(rLogs.length, 5) || 1;
 
-    if (esgCo2El) esgCo2El.textContent = `${weeklyCo2.toFixed(1)} Kg`;
-    if (esgMeatlessEl) esgMeatlessEl.textContent = `${meatlessDays} ${meatlessDays === 1 ? 'dia' : 'dias'}`;
-    if (esgPlasticEl) esgPlasticEl.textContent = plasticAvoided;
-    if (esgProgressEl) {
-        esgProgressEl.style.width = `${flyscores.esg}%`;
+    if (sustEnergyEl) sustEnergyEl.textContent = `${(totalEnergy / rCount).toFixed(1)} kWh`;
+    if (sustWaterEl) sustWaterEl.textContent = `${Math.round(totalWater / rCount)} L`;
+    if (sustFuelGasEl) sustFuelGasEl.textContent = `${(totalFuel / rCount).toFixed(1)}L / ${(totalGLP / rCount).toFixed(1)}Kg`;
+    if (sustProgressEl) {
+        sustProgressEl.style.width = `${flyscores.esg}%`;
     }
 
-    // 3.5. Mind Flies Summary
-    const mindLogs = state.mind.dailyLogs || [];
-    const mindMoodEl = document.getElementById('cockpit-mind-mood');
-    const mindEnergyEl = document.getElementById('cockpit-mind-energy');
-    const mindPracticesEl = document.getElementById('cockpit-mind-practices');
-    const mindProgressEl = document.getElementById('cockpit-mind-progress');
-
-    let avgMood = 0;
-    let avgEnergy = 0;
-    let practicesCount = 0;
-    if (mindLogs.length > 0) {
-        const last7 = mindLogs.slice(0, 7);
-        const sumMood = last7.reduce((acc, curr) => acc + (parseInt(curr.mood) || 3), 0);
-        const sumEnergy = last7.reduce((acc, curr) => acc + (parseInt(curr.energy) || 3), 0);
-        avgMood = sumMood / last7.length;
-        avgEnergy = sumEnergy / last7.length;
-        
-        last7.forEach(l => {
-            if (l.practices) practicesCount += l.practices.length;
-        });
-    }
-
-    const moodEmojis = { 1: '😫', 2: '😔', 3: '😐', 4: '😊', 5: '🤩' };
-    if (mindMoodEl) mindMoodEl.textContent = avgMood > 0 ? `${moodEmojis[Math.round(avgMood)]} (${avgMood.toFixed(1)})` : 'N/A';
-    if (mindEnergyEl) mindEnergyEl.textContent = avgEnergy > 0 ? `${avgEnergy.toFixed(1)} / 5` : 'N/A';
-    if (mindPracticesEl) mindPracticesEl.textContent = practicesCount;
-    if (mindProgressEl) {
-        mindProgressEl.style.width = `${flyscores.mind}%`;
-    }
-
-    // 3.6. Body Flies Summary
+    // 3.5. Saúde & Bem-Estar Summary
     const bodyLogs = state.body.dailyLogs || [];
+    const bodyMoodEl = document.getElementById('cockpit-body-mood');
+    const bodySleepExerciseEl = document.getElementById('cockpit-body-sleep-exercise');
     const bodyWaterEl = document.getElementById('cockpit-body-water');
-    const bodySleepEl = document.getElementById('cockpit-body-sleep');
-    const bodyExerciseEl = document.getElementById('cockpit-body-exercise');
     const bodyProgressEl = document.getElementById('cockpit-body-progress');
 
     const todayStr = new Date().toISOString().substring(0, 10);
@@ -1230,6 +1205,8 @@ function renderHome() {
     let totalSleep = 0;
     let exerciseMins = 0;
     let validSleepLogs = 0;
+    let moodSum = 0;
+    let validMoodLogs = 0;
     
     bodyLogs.slice(0, 7).forEach(l => {
         if (l.sleepStart && l.sleepEnd) {
@@ -1241,19 +1218,25 @@ function renderHome() {
             validSleepLogs++;
         }
         exerciseMins += (parseInt(l.exerciseDuration) || 0);
+        if (l.mood) {
+            moodSum += l.mood;
+            validMoodLogs++;
+        }
     });
 
     const avgSleepVal = validSleepLogs > 0 ? (totalSleep / validSleepLogs) : 0;
+    const avgMoodVal = validMoodLogs > 0 ? (moodSum / validMoodLogs) : 0;
 
+    const moodEmojis = { 1: '😫', 2: '😔', 3: '😐', 4: '😊', 5: '🤩' };
+    if (bodyMoodEl) bodyMoodEl.textContent = avgMoodVal > 0 ? `${moodEmojis[Math.round(avgMoodVal)]} (${avgMoodVal.toFixed(1)})` : 'N/A';
+    if (bodySleepExerciseEl) bodySleepExerciseEl.textContent = `${avgSleepVal.toFixed(1)}h / ${exerciseMins}m`;
     if (bodyWaterEl) bodyWaterEl.textContent = `${todayWater} / 8 copos`;
-    if (bodySleepEl) bodySleepEl.textContent = avgSleepVal > 0 ? `${avgSleepVal.toFixed(1)}h` : 'N/A';
-    if (bodyExerciseEl) bodyExerciseEl.textContent = `${exerciseMins} min`;
     if (bodyProgressEl) {
         bodyProgressEl.style.width = `${flyscores.body}%`;
     }
     
-    // Render do widget de alimentos na Home
-    if (typeof renderHomeFreshFoods === 'function') renderHomeFreshFoods();
+    // Render do widget de alimentos/compras na Home
+    if (typeof renderHomeShoppingList === 'function') renderHomeShoppingList();
 }
 
 // CÁLCULO GERAL DE FLYSCORE
@@ -1299,54 +1282,35 @@ function calculateFlyScore() {
     
     // 3. ESG Score - 20%
     let esgScore = 100;
-    const esgLogs = state.esg.dailyLogs || [];
-    if (esgLogs.length > 0) {
-        // Calculate based on last 7 logs
-        const lastLogs = esgLogs.slice(0, 7);
-        let waterDeficitDays = 0;
-        let meatlessDays = 0;
-        let plasticsAvoided = 0;
-        let recycledDays = 0;
-        let co2Sum = 0;
-        
-        lastLogs.forEach(l => {
-            if ((l.water || 0) < 1.5) waterDeficitDays++;
-            if (l.meatless) meatlessDays++;
-            if (l.recycled) recycledDays++;
-            plasticsAvoided += (parseInt(l.plasticAvoided) || 0);
-            
-            const co2 = (parseFloat(l.transportCar) || 0) * 0.18 + (parseFloat(l.transportPublic) || 0) * 0.04;
-            co2Sum += co2;
+    const resourceLogs = state.esg.resourceLogs || [];
+    if (resourceLogs.length > 0) {
+        let totalEnergy = 0, totalWater = 0, totalGLP = 0, totalFuel = 0;
+        resourceLogs.slice(0, 5).forEach(l => {
+            totalEnergy += l.energy;
+            totalWater += l.water;
+            totalGLP += l.glp;
+            totalFuel += l.fuel;
         });
+        const rCount = Math.min(resourceLogs.length, 5) || 1;
+        const avgEnergy = totalEnergy / rCount;
+        const avgWater = totalWater / rCount;
+        const avgFuel = totalFuel / rCount;
         
-        esgScore -= (waterDeficitDays * 8);
-        esgScore -= (co2Sum > 10 ? 15 : 0);
-        esgScore += (meatlessDays * 5);
-        esgScore += (recycledDays * 5);
-        esgScore += (plasticsAvoided * 2);
+        if (avgEnergy > 250) esgScore -= 15;
+        if (avgWater > 10000) esgScore -= 15;
+        if (avgFuel > 60) esgScore -= 15;
     }
-    
-    // Bônus/Penalidade de Alimentos Consumidos/Desperdiçados nos últimos 7 dias
-    const todayDate = new Date();
-    const sevenDaysAgo = new Date(todayDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const recentFoodLogs = state.esg.foodLogs || [];
-    recentFoodLogs.forEach(fl => {
-        const logDate = new Date(fl.date);
-        if (logDate >= sevenDaysAgo) {
-            if (fl.action === 'consumed') esgScore += 5;
-            if (fl.action === 'wasted') esgScore -= 10;
-        }
-    });
     esgScore = Math.max(0, Math.min(100, esgScore));
     
     // 4. Mind Score - 15%
     let mindScore = 100;
-    const mindLogs = state.mind.dailyLogs || [];
-    if (mindLogs.length > 0) {
-        const lastLogs = mindLogs.slice(0, 7);
+    const moodLogs = (state.body.dailyLogs || []).filter(l => l.mood);
+    if (moodLogs.length > 0) {
+        const lastLogs = moodLogs.slice(0, 7);
         const sumMood = lastLogs.reduce((acc, curr) => acc + (parseInt(curr.mood) || 3), 0);
         mindScore = (sumMood / (lastLogs.length * 5)) * 100;
     }
+    mindScore = Math.max(0, Math.min(100, mindScore));
     
     // 5. Body Score - 10%
     let bodyScore = 100;
@@ -1365,7 +1329,7 @@ function calculateFlyScore() {
         });
         
         // Contar treinos concluídos nos últimos 7 dias e adicionar 45 minutos para cada um
-        const sevenDaysAgoStr = new Date(todayDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
+        const sevenDaysAgoStr = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
         let completedWorkoutsMins = 0;
         if (state.body.workouts) {
             state.body.workouts.forEach(w => {
@@ -1471,8 +1435,6 @@ function renderAll() {
     renderPendingTasksPanel();
     renderProjects(); // Renderiza projetos e estudos
     renderFinances(); // Renderiza lançamentos financeiros locais
-    renderEsg();
-    renderMind();
     renderBody();
     renderBooks();
     renderLanguages();
@@ -2319,9 +2281,11 @@ function getAverageMonthlyExpenses() {
         
         // Fixed expenses
         fixedExpenses.forEach(f => {
+            if (!isFixedExpenseActiveForMonth(f, monthStr)) return;
             const cat = f.category || 'outros';
-            categoryTotals[cat] = (categoryTotals[cat] || 0) + f.amount;
-            totalAllMonths += f.amount;
+            const val = f.monthlyAmounts && f.monthlyAmounts[monthStr] !== undefined ? f.monthlyAmounts[monthStr] : f.amount;
+            categoryTotals[cat] = (categoryTotals[cat] || 0) + val;
+            totalAllMonths += val;
         });
     });
     
@@ -2395,11 +2359,15 @@ function getPredictedCardExpenses(nextMonthStr) {
         
         // 2. Fixed expenses on this card
         fixedExpenses.forEach(fixed => {
+            if (!isFixedExpenseActiveForMonth(fixed, nextMonthStr)) return;
             if (fixed.method === 'card' && fixed.cardId === card.id) {
-                cardTotal += fixed.amount;
+                const amount = (fixed.monthlyAmounts && fixed.monthlyAmounts[nextMonthStr] !== undefined)
+                    ? fixed.monthlyAmounts[nextMonthStr]
+                    : fixed.amount;
+                cardTotal += amount;
                 items.push({
                     desc: `${fixed.title} (Despesa Fixa)`,
-                    amount: fixed.amount,
+                    amount: amount,
                     category: fixed.category
                 });
             }
@@ -4648,6 +4616,48 @@ function deleteFinanceTransactionDirect(id, event) {
     }
 }
 
+// Helpers para abrangência de despesas fixas
+function isFixedExpenseActiveForMonth(item, monthStr) {
+    if (!item) return false;
+    if (item.startDate && monthStr < item.startDate) {
+        return false;
+    }
+    if (item.endDate && monthStr > item.endDate) {
+        return false;
+    }
+    if (item.exceptMonths && item.exceptMonths[monthStr] === true) {
+        return false;
+    }
+    return true;
+}
+
+function getAllFinanceMonths(item) {
+    const months = new Set();
+    months.add(state.currentFinanceMonth);
+    if (state.finances && state.finances.expenses) {
+        state.finances.expenses.forEach(e => {
+            if (e.date) months.add(e.date.substring(0, 7));
+        });
+    }
+    if (state.finances && state.finances.incomes) {
+        state.finances.incomes.forEach(i => {
+            if (i.date) months.add(i.date.substring(0, 7));
+        });
+    }
+    if (item) {
+        if (item.history) {
+            Object.keys(item.history).forEach(m => months.add(m));
+        }
+        if (item.monthlyAmounts) {
+            Object.keys(item.monthlyAmounts).forEach(m => months.add(m));
+        }
+        if (item.exceptMonths) {
+            Object.keys(item.exceptMonths).forEach(m => months.add(m));
+        }
+    }
+    return Array.from(months).sort();
+}
+
 // Modal Despesas Fixas
 function openFixedExpenseModal(id = null) {
     const modal = document.getElementById('modal-fixed-expense');
@@ -4663,15 +4673,9 @@ function openFixedExpenseModal(id = null) {
     document.getElementById('fixed-expense-modal-title').textContent = 'Nova Despesa Fixa';
     
     const targetMonth = state.currentFinanceMonth;
-    const monthLabel = targetMonth.split('-').reverse().join('/');
-    const checkboxLabel = document.getElementById('label-fixed-expense-only-current-month');
-    if (checkboxLabel) {
-        checkboxLabel.textContent = `Alterar valor apenas para o mês selecionado (${monthLabel})`;
-    }
-    
-    const onlyCurrentMonthCheckbox = document.getElementById('fixed-expense-only-current-month');
-    if (onlyCurrentMonthCheckbox) {
-        onlyCurrentMonthCheckbox.checked = false; // default to unchecked (global change) for new items
+    const scopeSelect = document.getElementById('fixed-expense-scope');
+    if (scopeSelect) {
+        scopeSelect.value = 'only-current'; // padrão para novo ou início de edição
     }
     
     if (id) {
@@ -4691,10 +4695,6 @@ function openFixedExpenseModal(id = null) {
             
             if (item.method === 'card') {
                 document.getElementById('fixed-expense-card-id').value = item.cardId || 'default';
-            }
-            
-            if (onlyCurrentMonthCheckbox) {
-                onlyCurrentMonthCheckbox.checked = (item.monthlyAmounts && item.monthlyAmounts[targetMonth] !== undefined);
             }
             
             document.getElementById('btn-delete-fixed-expense').classList.remove('hidden');
@@ -4736,8 +4736,8 @@ function saveFixedExpense(event) {
     const method = document.getElementById('fixed-expense-method').value;
     const cardId = method === 'card' ? document.getElementById('fixed-expense-card-id').value : null;
     
-    const onlyCurrentMonthCheckbox = document.getElementById('fixed-expense-only-current-month');
-    const onlyCurrentMonth = onlyCurrentMonthCheckbox ? onlyCurrentMonthCheckbox.checked : false;
+    const scopeSelect = document.getElementById('fixed-expense-scope');
+    const scope = scopeSelect ? scopeSelect.value : 'only-current';
     
     const targetMonth = state.currentFinanceMonth;
     
@@ -4751,8 +4751,13 @@ function saveFixedExpense(event) {
         if (index !== -1) {
             const item = state.finances.fixedExpenses[index];
             if (!item.monthlyAmounts) item.monthlyAmounts = {};
+            if (!item.exceptMonths) item.exceptMonths = {};
             
-            // Shallow copy to modify
+            // Remove exceção se houver no mês atual
+            if (item.exceptMonths[targetMonth]) {
+                delete item.exceptMonths[targetMonth];
+            }
+            
             let updatedItem = {
                 ...item,
                 title,
@@ -4763,13 +4768,52 @@ function saveFixedExpense(event) {
                 updatedAt: Date.now()
             };
             
-            if (onlyCurrentMonth) {
+            if (scope === 'only-current') {
                 updatedItem.monthlyAmounts[targetMonth] = amount;
-            } else {
-                updatedItem.amount = amount;
-                if (updatedItem.monthlyAmounts[targetMonth] !== undefined) {
-                    delete updatedItem.monthlyAmounts[targetMonth];
+            } else if (scope === 'from-current-forward') {
+                const allMonths = getAllFinanceMonths(item);
+                const oldBaseAmount = item.amount;
+                
+                allMonths.forEach(m => {
+                    if (m < targetMonth) {
+                        if (updatedItem.monthlyAmounts[m] === undefined) {
+                            updatedItem.monthlyAmounts[m] = oldBaseAmount;
+                        }
+                    } else {
+                        delete updatedItem.monthlyAmounts[m];
+                        if (updatedItem.exceptMonths[m]) {
+                            delete updatedItem.exceptMonths[m];
+                        }
+                    }
+                });
+                
+                if (updatedItem.endDate && updatedItem.endDate >= targetMonth) {
+                    delete updatedItem.endDate;
                 }
+                
+                updatedItem.amount = amount;
+            } else if (scope === 'from-current-backward') {
+                const allMonths = getAllFinanceMonths(item);
+                const oldBaseAmount = item.amount;
+                
+                allMonths.forEach(m => {
+                    if (m > targetMonth) {
+                        if (updatedItem.monthlyAmounts[m] === undefined) {
+                            updatedItem.monthlyAmounts[m] = oldBaseAmount;
+                        }
+                    } else {
+                        delete updatedItem.monthlyAmounts[m];
+                        if (updatedItem.exceptMonths[m]) {
+                            delete updatedItem.exceptMonths[m];
+                        }
+                    }
+                });
+                
+                if (updatedItem.startDate && updatedItem.startDate <= targetMonth) {
+                    delete updatedItem.startDate;
+                }
+                
+                updatedItem.amount = amount;
             }
             
             state.finances.fixedExpenses[index] = updatedItem;
@@ -4783,12 +4827,13 @@ function saveFixedExpense(event) {
             desc,
             method,
             cardId,
-            history: {}, // Mapeia "YYYY-MM" -> boolean
+            history: {},
             monthlyAmounts: {},
+            exceptMonths: {},
             updatedAt: Date.now()
         };
         
-        if (onlyCurrentMonth) {
+        if (scope === 'only-current') {
             newItem.monthlyAmounts[targetMonth] = amount;
         }
         
@@ -4804,8 +4849,53 @@ function deleteFixedExpense() {
     const id = document.getElementById('fixed-expense-id').value;
     if (!id) return;
     
-    if (confirm('Deseja realmente excluir esta despesa fixa?')) {
-        state.finances.fixedExpenses = (state.finances.fixedExpenses || []).filter(f => f.id !== id);
+    const scopeSelect = document.getElementById('fixed-expense-scope');
+    const scope = scopeSelect ? scopeSelect.value : 'only-current';
+    const targetMonth = state.currentFinanceMonth;
+    
+    let scopeLabel = '';
+    if (scope === 'only-current') scopeLabel = 'apenas para o mês selecionado';
+    else if (scope === 'from-current-forward') scopeLabel = 'para este mês e os próximos meses';
+    else if (scope === 'from-current-backward') scopeLabel = 'para este mês e os meses anteriores';
+    
+    if (confirm(`Deseja realmente excluir esta despesa fixa ${scopeLabel}?`)) {
+        const index = state.finances.fixedExpenses.findIndex(f => f.id === id);
+        if (index !== -1) {
+            const item = state.finances.fixedExpenses[index];
+            if (!item.exceptMonths) item.exceptMonths = {};
+            
+            if (scope === 'only-current') {
+                item.exceptMonths[targetMonth] = true;
+                item.updatedAt = Date.now();
+            } else if (scope === 'from-current-forward') {
+                const allMonths = getAllFinanceMonths(item);
+                allMonths.forEach(m => {
+                    if (m >= targetMonth) {
+                        item.exceptMonths[m] = true;
+                    }
+                });
+                
+                const [year, month] = targetMonth.split('-').map(Number);
+                const targetDate = new Date(year, month - 1 - 1, 1);
+                const prevMonth = `${targetDate.getFullYear()}-${(targetDate.getMonth() + 1).toString().padStart(2, '0')}`;
+                item.endDate = prevMonth;
+                item.updatedAt = Date.now();
+            } else if (scope === 'from-current-backward') {
+                const allMonths = getAllFinanceMonths(item);
+                allMonths.forEach(m => {
+                    if (m <= targetMonth) {
+                        item.exceptMonths[m] = true;
+                    }
+                });
+                
+                const [year, month] = targetMonth.split('-').map(Number);
+                const targetDate = new Date(year, month - 1 + 1, 1);
+                const nextMonth = `${targetDate.getFullYear()}-${(targetDate.getMonth() + 1).toString().padStart(2, '0')}`;
+                item.startDate = nextMonth;
+                item.updatedAt = Date.now();
+            }
+        }
+        
         saveData();
         closeFixedExpenseModal();
         renderAll();
@@ -4814,7 +4904,7 @@ function deleteFixedExpense() {
 
 function deleteFixedExpenseDirect(id, event) {
     if (event) event.stopPropagation();
-    if (confirm('Deseja realmente excluir esta despesa fixa?')) {
+    if (confirm('Deseja realmente excluir esta despesa fixa permanentemente de todos os meses?')) {
         state.finances.fixedExpenses = (state.finances.fixedExpenses || []).filter(f => f.id !== id);
         saveData();
         renderAll();
@@ -5094,17 +5184,21 @@ function getCardExpensesForInvoice(targetMonthStr, cardId) {
     // 2. Filtrar despesas fixas pagas via este cartão de crédito específico
     const fixedExpenses = state.finances.fixedExpenses || [];
     fixedExpenses.forEach(item => {
+        if (!isFixedExpenseActiveForMonth(item, targetMonthStr)) return;
         if (item.method === 'card' && item.cardId === activeCardId) {
             if (item.history && item.history[targetMonthStr] === true) {
+                const amount = (item.monthlyAmounts && item.monthlyAmounts[targetMonthStr] !== undefined)
+                    ? item.monthlyAmounts[targetMonthStr]
+                    : item.amount;
                 // Se foi paga neste mês de referência, entra na fatura correspondente
                 invoiceExpenses.push({
                     id: `${item.id}_${targetMonthStr}`,
                     date: `${targetMonthStr}-${item.dueDay.toString().padStart(2, '0')}`,
-                    amount: item.amount,
+                    amount: amount,
                     category: item.category || 'servico',
                     desc: `${item.title} (Despesa Fixa)`,
                     installmentLabel: 'Fixo',
-                    installmentAmount: item.amount,
+                    installmentAmount: amount,
                     isFixedExpense: true // Flag
                 });
             }
@@ -5174,6 +5268,7 @@ function renderFinanceDashboard() {
     // 4. Despesas Fixas do mês (somar todas as despesas fixas cadastradas)
     const fixedList = state.finances.fixedExpenses || [];
     const totalFixed = fixedList.reduce((acc, f) => {
+        if (!isFixedExpenseActiveForMonth(f, targetMonth)) return acc;
         const val = f.monthlyAmounts && f.monthlyAmounts[targetMonth] !== undefined ? f.monthlyAmounts[targetMonth] : f.amount;
         return acc + val;
     }, 0);
@@ -5299,6 +5394,7 @@ function renderFinanceChart(cashExpenses, cardExpenses, fixedExpenses) {
     
     // Somar Despesas Fixas (como categoria 'Despesa Fixa' ou 'servico')
     fixedExpenses.forEach(f => {
+        if (!isFixedExpenseActiveForMonth(f, state.currentFinanceMonth)) return;
         const val = f.monthlyAmounts && f.monthlyAmounts[state.currentFinanceMonth] !== undefined ? f.monthlyAmounts[state.currentFinanceMonth] : f.amount;
         categoryTotals['Despesas Fixas'] = (categoryTotals['Despesas Fixas'] || 0) + val;
     });
@@ -5625,16 +5721,17 @@ function renderFinanceFixed() {
     const fixedList = state.finances.fixedExpenses || [];
     const targetMonth = state.currentFinanceMonth;
     
+    const activeList = fixedList.filter(item => isFixedExpenseActiveForMonth(item, targetMonth));
     let paidCount = 0;
     
-    if (fixedList.length === 0) {
+    if (activeList.length === 0) {
         if (emptyMsg) emptyMsg.classList.remove('hidden');
         tbody.parentElement.style.display = 'none';
     } else {
         if (emptyMsg) emptyMsg.classList.add('hidden');
         tbody.parentElement.style.display = '';
         
-        fixedList.forEach(item => {
+        activeList.forEach(item => {
             const tr = document.createElement('tr');
             
             if (!item.history) item.history = {};
@@ -5670,7 +5767,7 @@ function renderFinanceFixed() {
         });
     }
     
-    document.getElementById('fixed-paid-count').textContent = `${paidCount} de ${fixedList.length} pagas`;
+    document.getElementById('fixed-paid-count').textContent = `${paidCount} de ${activeList.length} pagas`;
     safeCreateIcons();
 }
 
@@ -6219,242 +6316,61 @@ window.deleteMoneyGoal = deleteMoneyGoal;
 window.addGoalDeposit = addGoalDeposit;
 
 // ============================================================
-// ESG FLIES CORE FUNCTIONS
+// SAÚDE E SUSTENTABILIDADE CORE FUNCTIONS
 // ============================================================
-function openEsgLogModal() {
-    const modal = document.getElementById('modal-esg-log');
-    if (!modal) return;
-    modal.classList.add('active');
+function switchBodySubTab(subtab) {
+    state.body.currentBodySubTab = subtab;
     
-    // Default values
-    document.getElementById('esg-log-date').value = new Date().toISOString().substring(0, 10);
-    document.getElementById('esg-log-water').value = '';
-    document.getElementById('esg-log-car').value = '0';
-    document.getElementById('esg-log-public').value = '0';
-    document.getElementById('esg-log-active').value = '0';
-    document.getElementById('esg-log-meatless').checked = false;
-    document.getElementById('esg-log-recycled').checked = false;
-    document.getElementById('esg-log-plastic').value = '0';
-}
-
-function closeEsgLogModal() {
-    const modal = document.getElementById('modal-esg-log');
-    if (modal) modal.classList.remove('active');
-}
-
-function saveEsgLog(event) {
-    event.preventDefault();
-    const date = document.getElementById('esg-log-date').value;
-    const water = parseFloat(document.getElementById('esg-log-water').value) || 0;
-    const transportCar = parseFloat(document.getElementById('esg-log-car').value) || 0;
-    const transportPublic = parseFloat(document.getElementById('esg-log-public').value) || 0;
-    const transportActive = parseFloat(document.getElementById('esg-log-active').value) || 0;
-    const meatless = document.getElementById('esg-log-meatless').checked;
-    const recycled = document.getElementById('esg-log-recycled').checked;
-    const plasticAvoided = parseInt(document.getElementById('esg-log-plastic').value) || 0;
-    
-    const index = state.esg.dailyLogs.findIndex(l => l.date === date);
-    const log = { date, water, transportCar, transportPublic, transportActive, meatless, recycled, plasticAvoided };
-    
-    if (index > -1) {
-        state.esg.dailyLogs[index] = log;
-    } else {
-        state.esg.dailyLogs.push(log);
+    // Update buttons UI
+    const btnHealth = document.getElementById('btn-body-tab-health');
+    const btnSust = document.getElementById('btn-body-tab-sustainable');
+    if (btnHealth && btnSust) {
+        if (subtab === 'health') {
+            btnHealth.classList.add('active');
+            btnSust.classList.remove('active');
+        } else {
+            btnHealth.classList.remove('active');
+            btnSust.classList.add('active');
+        }
     }
     
-    // Sort descending
-    state.esg.dailyLogs.sort((a,b) => b.date.localeCompare(a.date));
+    // Update content containers UI
+    const healthContent = document.getElementById('body-subtab-health-content');
+    const sustContent = document.getElementById('body-subtab-sustainable-content');
+    if (healthContent && sustContent) {
+        if (subtab === 'health') {
+            healthContent.style.display = 'flex';
+            sustContent.style.display = 'none';
+        } else {
+            healthContent.style.display = 'none';
+            sustContent.style.display = 'flex';
+        }
+    }
+    
+    // Update the main action button (Novo)
+    const actionBtn = document.getElementById('btn-body-main-action');
+    if (actionBtn) {
+        if (subtab === 'health') {
+            actionBtn.innerHTML = '<i data-lucide="plus" style="width: 14px; height: 14px;"></i> Novo';
+        } else {
+            actionBtn.innerHTML = '<i data-lucide="plus" style="width: 14px; height: 14px;"></i> Registrar Consumo';
+        }
+        safeCreateIcons();
+    }
     
     saveData();
-    renderAll();
-    closeEsgLogModal();
+    renderBody();
 }
 
-function renderEsg() {
-    const logs = state.esg.dailyLogs || [];
-    const waterEl = document.getElementById('esg-stat-water');
-    const co2El = document.getElementById('esg-stat-co2');
-    const meatlessEl = document.getElementById('esg-stat-meatless');
-    const wasteEl = document.getElementById('esg-stat-waste');
-    const tbody = document.getElementById('esg-history-tbody');
-    
-    if (!waterEl || !tbody) return;
-    
-    // Calculations
-    let waterSum = 0;
-    let co2Weekly = 0;
-    let meatlessCount = 0;
-    let plasticAvoidedTotal = 0;
-    
-    logs.forEach(l => {
-        waterSum += l.water;
-        plasticAvoidedTotal += (l.plasticAvoided || 0);
-    });
-    
-    // CO2 footprint from last 7 logs
-    logs.slice(0, 7).forEach(l => {
-        co2Weekly += (parseFloat(l.transportCar) || 0) * 0.18 + (parseFloat(l.transportPublic) || 0) * 0.04;
-        if (l.meatless) meatlessCount++;
-    });
-    
-    const avgWater = logs.length > 0 ? (waterSum / logs.length) : 0;
-    
-    waterEl.textContent = `${avgWater.toFixed(1)} L`;
-    co2El.textContent = `${co2Weekly.toFixed(1)} Kg`;
-    meatlessEl.textContent = `${meatlessCount} ${meatlessCount === 1 ? 'dia' : 'dias'}`;
-    wasteEl.textContent = `${plasticAvoidedTotal} garrafas`;
-    
-    tbody.innerHTML = '';
-    if (logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="padding: 12px; text-align: center; color: var(--text-muted);">Nenhum hábito ESG registrado.</td></tr>`;
-        return;
-    }
-    
-    logs.forEach(l => {
-        const co2 = (parseFloat(l.transportCar) || 0) * 0.18 + (parseFloat(l.transportPublic) || 0) * 0.04;
-        const row = document.createElement('tr');
-        row.style.borderBottom = '1px solid rgba(255,255,255,0.04)';
-        row.innerHTML = `
-            <td style="padding: 8px; font-weight: 700;">${l.date.split('-').reverse().join('/')}</td>
-            <td style="padding: 8px;">${l.water.toFixed(1)} L</td>
-            <td style="padding: 8px; color: ${co2 > 3 ? 'var(--danger)' : 'var(--success)'};">${co2.toFixed(2)} Kg</td>
-            <td style="padding: 8px;">${l.meatless ? 'Sim 🌱' : 'Não'}</td>
-            <td style="padding: 8px;">${l.plasticAvoided} ev. ${l.recycled ? '(Reciclado)' : ''}</td>
-        `;
-        tbody.appendChild(row);
-    });
-    
-    // Render novas abas/widgets da lista de compras e validade
-    if (typeof renderShoppingList === 'function') renderShoppingList();
-    if (typeof renderFreshFoods === 'function') renderFreshFoods();
-}
-
-// ============================================================
-// MIND FLIES CORE FUNCTIONS
-// ============================================================
-function openMindLogModal() {
-    const modal = document.getElementById('modal-mind-log');
-    if (!modal) return;
-    modal.classList.add('active');
-    
-    document.getElementById('mind-log-date').value = new Date().toISOString().substring(0, 10);
-    document.getElementById('mind-log-mood').value = '';
-    document.getElementById('mind-log-notes').value = '';
-    document.getElementById('mind-log-energy').value = '3';
-    
-    document.querySelectorAll('.mood-emoji-btn').forEach(btn => {
-        btn.classList.remove('active');
-        btn.onclick = () => {
-            document.querySelectorAll('.mood-emoji-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('mind-log-mood').value = btn.dataset.mood;
-        };
-    });
-    
-    document.querySelectorAll('#modal-mind-log input[type="checkbox"]').forEach(cb => {
-        cb.checked = false;
-    });
-}
-
-function closeMindLogModal() {
-    const modal = document.getElementById('modal-mind-log');
-    if (modal) modal.classList.remove('active');
-}
-
-function saveMindLog(event) {
-    event.preventDefault();
-    const date = document.getElementById('mind-log-date').value;
-    const mood = parseInt(document.getElementById('mind-log-mood').value);
-    const energy = parseInt(document.getElementById('mind-log-energy').value);
-    const notes = document.getElementById('mind-log-notes').value.trim();
-    
-    if (isNaN(mood)) {
-        alert("Por favor, selecione um emoji de humor.");
-        return;
-    }
-    
-    const practices = [];
-    document.querySelectorAll('#modal-mind-log input[type="checkbox"]:checked').forEach(cb => {
-        practices.push(cb.value);
-    });
-    
-    const index = state.mind.dailyLogs.findIndex(l => l.date === date);
-    const log = { date, mood, energy, notes, practices };
-    
-    if (index > -1) {
-        state.mind.dailyLogs[index] = log;
+function handleBodyMainAction() {
+    const current = state.body.currentBodySubTab || 'health';
+    if (current === 'health') {
+        openBodyLogModal();
     } else {
-        state.mind.dailyLogs.push(log);
+        openSustainableLogModal();
     }
-    
-    state.mind.dailyLogs.sort((a,b) => b.date.localeCompare(a.date));
-    
-    saveData();
-    renderAll();
-    closeMindLogModal();
 }
 
-function renderMind() {
-    const logs = state.mind.dailyLogs || [];
-    const moodEl = document.getElementById('mind-stat-mood');
-    const energyEl = document.getElementById('mind-stat-energy');
-    const practicesEl = document.getElementById('mind-stat-practices');
-    const container = document.getElementById('mind-history-container');
-    
-    if (!moodEl || !container) return;
-    
-    let moodSum = 0;
-    let energySum = 0;
-    let totalPractices = 0;
-    
-    logs.forEach(l => {
-        moodSum += l.mood;
-        energySum += l.energy;
-        totalPractices += (l.practices || []).length;
-    });
-    
-    const avgMood = logs.length > 0 ? (moodSum / logs.length) : 0;
-    const avgEnergy = logs.length > 0 ? (energySum / logs.length) : 0;
-    
-    const moodEmojis = { 1: '😫', 2: '😔', 3: '😐', 4: '😊', 5: '🤩' };
-    moodEl.textContent = avgMood > 0 ? `${moodEmojis[Math.round(avgMood)]} (${avgMood.toFixed(1)})` : 'N/A';
-    energyEl.textContent = avgEnergy > 0 ? `${avgEnergy.toFixed(1)} / 5` : 'N/A';
-    practicesEl.textContent = totalPractices;
-    
-    container.innerHTML = '';
-    if (logs.length === 0) {
-        container.innerHTML = `<div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; padding: 20px;">Nenhum registro de saúde mental ainda.</div>`;
-        return;
-    }
-    
-    logs.forEach(l => {
-        const formattedDate = l.date.split('-').reverse().join('/');
-        const div = document.createElement('div');
-        div.className = 'glass-panel';
-        div.style.padding = '12px 14px';
-        div.style.background = 'rgba(255,255,255,0.01)';
-        div.style.borderColor = 'rgba(255,255,255,0.04)';
-        
-        let badgesHtml = '';
-        l.practices.forEach(p => {
-            badgesHtml += `<span style="font-size: 0.65rem; background: rgba(59,130,246,0.15); color: #3b82f6; border-radius: 4px; padding: 2px 6px; font-weight: 700; margin-right: 4px;">${p}</span>`;
-        });
-        
-        div.innerHTML = `
-            <div class="space-between" style="margin-bottom: 6px;">
-                <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-main);">${formattedDate}</span>
-                <span style="font-size: 1.1rem;">${moodEmojis[l.mood]} <span style="font-size: 0.7rem; color: var(--text-muted);">⚡ ${l.energy}/5</span></span>
-            </div>
-            ${badgesHtml ? `<div style="margin-bottom: 6px; display: flex; flex-wrap: wrap;">${badgesHtml}</div>` : ''}
-            ${l.notes ? `<p style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; margin: 0; line-height: 1.3;">"${l.notes}"</p>` : ''}
-        `;
-        container.appendChild(div);
-    });
-}
-
-// ============================================================
-// BODY FLIES CORE FUNCTIONS
-// ============================================================
 function openBodyLogModal() {
     const modal = document.getElementById('modal-body-log');
     if (!modal) return;
@@ -6467,6 +6383,10 @@ function openBodyLogModal() {
     document.getElementById('body-log-exercise-type').value = '';
     document.getElementById('body-log-exercise-duration').value = '';
     document.getElementById('body-log-weight').value = '';
+    
+    // Default mood & energy
+    document.getElementById('body-log-mood').value = '4';
+    document.getElementById('body-log-energy').value = '4';
 }
 
 function closeBodyLogModal() {
@@ -6483,13 +6403,15 @@ function saveBodyLog(event) {
     const exerciseType = document.getElementById('body-log-exercise-type').value.trim();
     const exerciseDuration = parseInt(document.getElementById('body-log-exercise-duration').value) || 0;
     const weight = parseFloat(document.getElementById('body-log-weight').value) || 0;
+    const mood = parseInt(document.getElementById('body-log-mood').value) || 4;
+    const energy = parseInt(document.getElementById('body-log-energy').value) || 4;
     
     const index = state.body.dailyLogs.findIndex(l => l.date === date);
     
     // Preserve existing waterCups if any
     const existingWater = index > -1 ? (state.body.dailyLogs[index].waterCups || 0) : 0;
     
-    const log = { date, waterCups: existingWater, sleepStart, sleepEnd, sleepQuality, exerciseType, exerciseDuration, weight };
+    const log = { date, waterCups: existingWater, sleepStart, sleepEnd, sleepQuality, exerciseType, exerciseDuration, weight, mood, energy };
     
     if (index > -1) {
         state.body.dailyLogs[index] = log;
@@ -6516,7 +6438,7 @@ function adjustWaterCups(change) {
     let index = state.body.dailyLogs.findIndex(l => l.date === today);
     
     if (index === -1) {
-        const log = { date: today, waterCups: 0, sleepStart: '', sleepEnd: '', sleepQuality: 5, exerciseType: '', exerciseDuration: 0, weight: 0 };
+        const log = { date: today, waterCups: 0, sleepStart: '', sleepEnd: '', sleepQuality: 5, exerciseType: '', exerciseDuration: 0, weight: 0, mood: 4, energy: 4 };
         state.body.dailyLogs.push(log);
         index = state.body.dailyLogs.length - 1;
     }
@@ -6532,11 +6454,149 @@ function adjustWaterCups(change) {
     renderAll();
 }
 
+function openSustainableLogModal() {
+    const modal = document.getElementById('modal-sustainable-log');
+    if (!modal) return;
+    modal.classList.add('active');
+    
+    // Set default fields
+    document.getElementById('sust-log-frequency').value = 'weekly';
+    document.getElementById('sust-log-date').value = new Date().toISOString().substring(0, 10);
+    document.getElementById('sust-log-month').value = new Date().toISOString().substring(0, 7);
+    document.getElementById('sust-log-quarter').value = 'Q' + Math.ceil((new Date().getMonth() + 1) / 3);
+    document.getElementById('sust-log-quarter-year').value = new Date().getFullYear();
+    
+    document.getElementById('sust-log-energy').value = '';
+    document.getElementById('sust-log-water').value = '';
+    document.getElementById('sust-log-glp').value = '';
+    document.getElementById('sust-log-fuel').value = '';
+    
+    onSustFrequencyChange();
+}
+
+function closeSustainableLogModal() {
+    const modal = document.getElementById('modal-sustainable-log');
+    if (modal) modal.classList.remove('active');
+}
+
+function onSustFrequencyChange() {
+    const freq = document.getElementById('sust-log-frequency').value;
+    
+    const weeklyGroup = document.getElementById('sust-period-weekly-group');
+    const monthlyGroup = document.getElementById('sust-period-monthly-group');
+    const quarterlyGroup = document.getElementById('sust-period-quarterly-group');
+    
+    if (weeklyGroup) weeklyGroup.classList.toggle('hidden', freq !== 'weekly');
+    if (monthlyGroup) monthlyGroup.classList.toggle('hidden', freq !== 'monthly');
+    if (quarterlyGroup) quarterlyGroup.classList.toggle('hidden', freq !== 'quarterly');
+}
+
+function saveSustainableLog(event) {
+    event.preventDefault();
+    const frequency = document.getElementById('sust-log-frequency').value;
+    
+    let periodRef = '';
+    if (frequency === 'weekly') {
+        const dateVal = document.getElementById('sust-log-date').value;
+        if (!dateVal) return;
+        const d = new Date(dateVal);
+        const startOfYear = new Date(d.getFullYear(), 0, 1);
+        const pastDays = (d - startOfYear) / (24 * 60 * 60 * 1000);
+        const weekNum = Math.ceil((pastDays + startOfYear.getDay() + 1) / 7);
+        periodRef = `${d.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`;
+    } else if (frequency === 'monthly') {
+        const monthVal = document.getElementById('sust-log-month').value;
+        if (!monthVal) return;
+        periodRef = monthVal;
+    } else if (frequency === 'quarterly') {
+        const qVal = document.getElementById('sust-log-quarter').value;
+        const yearVal = document.getElementById('sust-log-quarter-year').value;
+        periodRef = `${yearVal}-${qVal}`;
+    }
+    
+    const energy = parseFloat(document.getElementById('sust-log-energy').value) || 0;
+    const water = parseFloat(document.getElementById('sust-log-water').value) || 0;
+    const glp = parseFloat(document.getElementById('sust-log-glp').value) || 0;
+    const fuel = parseFloat(document.getElementById('sust-log-fuel').value) || 0;
+    
+    const logId = 'res_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    
+    const existingIndex = state.esg.resourceLogs.findIndex(l => l.frequency === frequency && l.periodRef === periodRef);
+    const logObj = {
+        id: existingIndex > -1 ? state.esg.resourceLogs[existingIndex].id : logId,
+        frequency,
+        periodRef,
+        energy,
+        water,
+        glp,
+        fuel,
+        dateAdded: new Date().toISOString().substring(0, 10)
+    };
+    
+    if (existingIndex > -1) {
+        state.esg.resourceLogs[existingIndex] = logObj;
+    } else {
+        state.esg.resourceLogs.push(logObj);
+    }
+    
+    state.esg.resourceLogs.sort((a, b) => b.periodRef.localeCompare(a.periodRef));
+    
+    saveData();
+    renderAll();
+    closeSustainableLogModal();
+}
+
+function deleteSustainableLog(id) {
+    if (confirm("Tem certeza que deseja excluir este registro de consumo?")) {
+        state.esg.resourceLogs = state.esg.resourceLogs.filter(l => l.id !== id);
+        saveData();
+        renderAll();
+    }
+}
+window.deleteSustainableLog = deleteSustainableLog;
+
 function renderBody() {
+    const current = state.body.currentBodySubTab || 'health';
+    
+    // Switch the sub-tab UI active state
+    const btnHealth = document.getElementById('btn-body-tab-health');
+    const btnSust = document.getElementById('btn-body-tab-sustainable');
+    if (btnHealth && btnSust) {
+        btnHealth.classList.toggle('active', current === 'health');
+        btnSust.classList.toggle('active', current === 'sustainable');
+    }
+    
+    const healthContent = document.getElementById('body-subtab-health-content');
+    const sustContent = document.getElementById('body-subtab-sustainable-content');
+    if (healthContent && sustContent) {
+        healthContent.style.display = current === 'health' ? 'flex' : 'none';
+        sustContent.style.display = current === 'sustainable' ? 'flex' : 'none';
+    }
+    
+    const actionBtn = document.getElementById('btn-body-main-action');
+    if (actionBtn) {
+        if (current === 'health') {
+            actionBtn.innerHTML = '<i data-lucide="plus" style="width: 14px; height: 14px;"></i> Novo';
+        } else {
+            actionBtn.innerHTML = '<i data-lucide="plus" style="width: 14px; height: 14px;"></i> Registrar Consumo';
+        }
+        safeCreateIcons();
+    }
+    
+    if (current === 'health') {
+        renderBodySubTabHealth();
+    } else {
+        renderBodySubTabSustainable();
+    }
+}
+
+function renderBodySubTabHealth() {
     const logs = state.body.dailyLogs || [];
     const sleepEl = document.getElementById('body-avg-sleep');
     const qualityEl = document.getElementById('body-avg-sleep-quality');
     const exerciseEl = document.getElementById('body-avg-exercise');
+    const moodEl = document.getElementById('body-avg-mood');
+    const energyEl = document.getElementById('body-avg-energy');
     const weightEl = document.getElementById('body-last-weight');
     const tbody = document.getElementById('body-history-tbody');
     
@@ -6563,12 +6623,15 @@ function renderBody() {
         waterLabel.textContent = `${waterCount} / 8 copos (${(waterCount * 250 / 1000).toFixed(1)} L)`;
     }
     
-    if (!sleepEl || !tbody) return;
+    if (!tbody) return;
     
     let totalSleep = 0;
     let sleepQualitySum = 0;
     let exerciseMins = 0;
     let validSleepLogs = 0;
+    let moodSum = 0;
+    let energySum = 0;
+    let validMoodLogs = 0;
     
     logs.forEach(l => {
         if (l.sleepStart && l.sleepEnd) {
@@ -6581,21 +6644,32 @@ function renderBody() {
             validSleepLogs++;
         }
         exerciseMins += (parseInt(l.exerciseDuration) || 0);
+        if (l.mood) {
+            moodSum += l.mood;
+            energySum += l.energy;
+            validMoodLogs++;
+        }
     });
     
     const avgSleepVal = validSleepLogs > 0 ? (totalSleep / validSleepLogs) : 0;
     const avgQualityVal = validSleepLogs > 0 ? (sleepQualitySum / validSleepLogs) : 0;
+    const avgMoodVal = validMoodLogs > 0 ? (moodSum / validMoodLogs) : 0;
+    const avgEnergyVal = validMoodLogs > 0 ? (energySum / validMoodLogs) : 0;
     
-    sleepEl.textContent = avgSleepVal > 0 ? `${avgSleepVal.toFixed(1)}h` : 'N/A';
-    qualityEl.textContent = avgQualityVal > 0 ? `${'⭐'.repeat(Math.round(avgQualityVal))}` : 'N/A';
-    exerciseEl.textContent = `${exerciseMins} min`;
+    if (sleepEl) sleepEl.textContent = avgSleepVal > 0 ? `${avgSleepVal.toFixed(1)}h` : 'N/A';
+    if (qualityEl) qualityEl.textContent = avgQualityVal > 0 ? '⭐'.repeat(Math.round(avgQualityVal)) : 'N/A';
+    if (exerciseEl) exerciseEl.textContent = `${exerciseMins} min`;
+    
+    const moodEmojis = { 1: '😫', 2: '😔', 3: '😐', 4: '😊', 5: '🤩' };
+    if (moodEl) moodEl.textContent = avgMoodVal > 0 ? `${moodEmojis[Math.round(avgMoodVal)]} (${avgMoodVal.toFixed(1)})` : 'N/A';
+    if (energyEl) energyEl.textContent = avgEnergyVal > 0 ? `${avgEnergyVal.toFixed(1)}/5` : 'N/A';
     
     const lastWeightLog = state.body.weightHistory[0];
-    weightEl.textContent = lastWeightLog ? `${lastWeightLog.weight.toFixed(1)} Kg` : 'N/A';
+    if (weightEl) weightEl.textContent = lastWeightLog ? `${lastWeightLog.weight.toFixed(1)} Kg` : 'N/A';
     
     tbody.innerHTML = '';
     if (logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="padding: 12px; text-align: center; color: var(--text-muted);">Nenhum hábito físico registrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="padding: 12px; text-align: center; color: var(--text-muted);">Nenhum hábito físico registrado.</td></tr>`;
         return;
     }
     
@@ -6612,15 +6686,82 @@ function renderBody() {
         row.innerHTML = `
             <td style="padding: 8px; font-weight: 700;">${l.date.split('-').reverse().join('/')}</td>
             <td style="padding: 8px;">${sleepDiff} (${l.sleepStart}-${l.sleepEnd})</td>
-            <td style="padding: 8px;">${'⭐'.repeat(l.sleepQuality)}</td>
+            <td style="padding: 8px;">${l.sleepQuality ? '⭐'.repeat(l.sleepQuality) : '-'}</td>
             <td style="padding: 8px;">${l.exerciseDuration > 0 ? `${l.exerciseType} (${l.exerciseDuration}m)` : 'Não'}</td>
             <td style="padding: 8px;">${l.weight > 0 ? `${l.weight.toFixed(1)} Kg` : '-'}</td>
+            <td style="padding: 8px;">${l.mood ? moodEmojis[l.mood] : '-'}</td>
+            <td style="padding: 8px;">${l.energy ? `⚡ ${l.energy}/5` : '-'}</td>
         `;
         tbody.appendChild(row);
     });
     
-    // Render do painel de treinos
     if (typeof renderBodyWorkouts === 'function') renderBodyWorkouts();
+}
+
+function renderBodySubTabSustainable() {
+    if (typeof renderShoppingList === 'function') renderShoppingList();
+    if (typeof renderHomeShoppingList === 'function') renderHomeShoppingList();
+    
+    const rLogs = state.esg.resourceLogs || [];
+    
+    const energyEl = document.getElementById('sust-stat-energy');
+    const waterEl = document.getElementById('sust-stat-water');
+    const glpEl = document.getElementById('sust-stat-glp');
+    const fuelEl = document.getElementById('sust-stat-fuel');
+    const tbody = document.getElementById('sustainable-history-tbody');
+    
+    let energySum = 0, waterSum = 0, glpSum = 0, fuelSum = 0;
+    rLogs.forEach(l => {
+        energySum += l.energy;
+        waterSum += l.water;
+        glpSum += l.glp;
+        fuelSum += l.fuel;
+    });
+    
+    const count = rLogs.length || 1;
+    if (energyEl) energyEl.textContent = `${(energySum / count).toFixed(1)} kWh`;
+    if (waterEl) waterEl.textContent = `${Math.round(waterSum / count)} L`;
+    if (glpEl) glpEl.textContent = `${(glpSum / count).toFixed(1)} Kg`;
+    if (fuelEl) fuelEl.textContent = `${(fuelSum / count).toFixed(1)} L`;
+    
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    if (rLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="padding: 12px; text-align: center; color: var(--text-muted);">Nenhum consumo registrado ainda.</td></tr>`;
+        return;
+    }
+    
+    const freqLabels = { weekly: 'Semanal', monthly: 'Mensal', quarterly: 'Trimestral' };
+    
+    rLogs.forEach(l => {
+        let displayPeriod = l.periodRef;
+        if (l.frequency === 'weekly') {
+            displayPeriod = `Sem. ${l.periodRef.split('-W')[1]} (${l.periodRef.split('-W')[0]})`;
+        } else if (l.frequency === 'monthly') {
+            const parts = l.periodRef.split('-');
+            const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            displayPeriod = `${months[parseInt(parts[1])-1]}/${parts[0]}`;
+        } else if (l.frequency === 'quarterly') {
+            const parts = l.periodRef.split('-');
+            displayPeriod = `${parts[1]} (${parts[0]})`;
+        }
+        
+        const row = document.createElement('tr');
+        row.style.borderBottom = '1px solid rgba(255,255,255,0.04)';
+        row.innerHTML = `
+            <td style="padding: 8px; font-weight: 700;">${displayPeriod}</td>
+            <td style="padding: 8px;">${freqLabels[l.frequency] || l.frequency}</td>
+            <td style="padding: 8px;">${l.energy.toFixed(1)} kWh</td>
+            <td style="padding: 8px;">${l.water} L</td>
+            <td style="padding: 8px;">${l.glp.toFixed(1)} Kg</td>
+            <td style="padding: 8px;">${l.fuel.toFixed(1)} L</td>
+            <td style="padding: 8px;">
+                <button class="btn-danger btn-sm" onclick="deleteSustainableLog('${l.id}')" style="padding: 4px 6px; font-size: 0.65rem; border-radius: 4px;">Excluir</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
 }
 
 // ============================================================
@@ -6944,15 +7085,15 @@ function renderBooks() {
 }
 
 // Window Exports for new modules
-window.openEsgLogModal = openEsgLogModal;
-window.closeEsgLogModal = closeEsgLogModal;
-window.saveEsgLog = saveEsgLog;
-window.openMindLogModal = openMindLogModal;
-window.closeMindLogModal = closeMindLogModal;
-window.saveMindLog = saveMindLog;
 window.openBodyLogModal = openBodyLogModal;
 window.closeBodyLogModal = closeBodyLogModal;
 window.saveBodyLog = saveBodyLog;
+window.switchBodySubTab = switchBodySubTab;
+window.handleBodyMainAction = handleBodyMainAction;
+window.openSustainableLogModal = openSustainableLogModal;
+window.closeSustainableLogModal = closeSustainableLogModal;
+window.saveSustainableLog = saveSustainableLog;
+window.onSustFrequencyChange = onSustFrequencyChange;
 window.adjustWaterCups = adjustWaterCups;
 window.switchLearnSubTab = switchLearnSubTab;
 window.handleNewLearnAction = handleNewLearnAction;
@@ -7125,7 +7266,7 @@ function getDefaultWorkouts() {
     ];
 }
 
-// 2. Lista de Compras Inteligente
+// 2. Lista de Compras
 function renderShoppingList() {
     const listContainer = document.getElementById('esg-shopping-list');
     if (!listContainer) return;
@@ -7138,58 +7279,65 @@ function renderShoppingList() {
         return;
     }
     
-    // Group by category
-    const categories = ['Hortifrúti', 'Frios/Proteínas', 'Mercearia', 'Outros'];
-    categories.forEach(cat => {
-        const catItems = items.filter(i => i.category === cat);
-        if (catItems.length === 0) return;
+    items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `shopping-item-card ${item.checked ? 'checked' : ''}`;
+        card.style.cssText = 'background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;';
         
-        const catHeader = document.createElement('div');
-        catHeader.style.cssText = 'font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin: 6px 0 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 2px;';
-        catHeader.textContent = cat;
-        listContainer.appendChild(catHeader);
+        card.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShoppingItem('${item.id}')" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--accent);">
+                <span class="shopping-item-text" style="font-size: 0.8rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; ${item.checked ? 'text-decoration: line-through; opacity: 0.5;' : ''}">${item.name}</span>
+            </div>
+            <button type="button" class="btn-icon text-danger" onclick="deleteShoppingItem('${item.id}')" style="background: transparent; border: none; cursor: pointer; padding: 2px;"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
+        `;
+        listContainer.appendChild(card);
+    });
+    
+    safeCreateIcons();
+}
+
+function renderHomeShoppingList() {
+    const listContainer = document.getElementById('home-shopping-list');
+    if (!listContainer) return;
+    
+    const items = state.esg.shoppingList || [];
+    listContainer.innerHTML = '';
+    
+    if (items.length === 0) {
+        listContainer.innerHTML = `<div style="text-align: center; font-size: 0.72rem; color: var(--text-muted); padding: 8px;">Nenhum item na lista de compras.</div>`;
+        return;
+    }
+    
+    items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `shopping-item-card ${item.checked ? 'checked' : ''}`;
+        card.style.cssText = 'background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;';
         
-        catItems.forEach(item => {
-            const card = document.createElement('div');
-            card.className = `shopping-item-card ${item.checked ? 'checked' : ''}`;
-            
-            let actionBtn = '';
-            if (item.checked) {
-                // If checked, show the button to send to Expiration Control
-                actionBtn = `<button type="button" class="btn-icon" onclick="openEsgFoodModal('${item.name}')" title="Mandar para Validade" style="background: rgba(245,158,11,0.15); color: #f59e0b; padding: 4px; border-radius: 4px; border: none; display: flex; align-items: center;"><i data-lucide="calendar-plus" style="width: 13px; height: 13px;"></i></button>`;
-            }
-            
-            card.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
-                    <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShoppingItem('${item.id}')" style="cursor: pointer; width: 15px; height: 15px; accent-color: hsl(142, 60%, 45%);">
-                    <span class="shopping-item-text" style="font-size: 0.8rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</span>
-                </div>
-                <div style="display: flex; gap: 4px; align-items: center;">
-                    ${actionBtn}
-                    <button type="button" class="btn-icon text-danger" onclick="deleteShoppingItem('${item.id}')" style="background: transparent; border: none; cursor: pointer; padding: 2px;"><i data-lucide="trash-2" style="width: 13px; height: 13px;"></i></button>
-                </div>
-            `;
-            listContainer.appendChild(card);
-        });
+        card.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShoppingItem('${item.id}')" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--accent);">
+                <span class="shopping-item-text" style="font-size: 0.75rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; ${item.checked ? 'text-decoration: line-through; opacity: 0.5;' : ''}">${item.name}</span>
+            </div>
+            <button type="button" class="btn-icon text-danger" onclick="deleteShoppingItem('${item.id}')" style="background: transparent; border: none; cursor: pointer; padding: 2px;"><i data-lucide="trash-2" style="width: 12px; height: 12px;"></i></button>
+        `;
+        listContainer.appendChild(card);
     });
     
     safeCreateIcons();
 }
 
 function addShoppingItem(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
     const input = document.getElementById('shopping-item-name');
-    const select = document.getElementById('shopping-item-category');
     if (!input) return;
     
     const name = input.value.trim();
-    const category = select.value;
     if (!name) return;
     
     const newItem = {
         id: 'shop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
         name: name,
-        category: category,
         checked: false
     };
     
@@ -7199,6 +7347,7 @@ function addShoppingItem(event) {
     input.value = '';
     saveData();
     renderShoppingList();
+    renderHomeShoppingList();
 }
 
 function toggleShoppingItem(id) {
@@ -7207,6 +7356,7 @@ function toggleShoppingItem(id) {
         item.checked = !item.checked;
         saveData();
         renderShoppingList();
+        renderHomeShoppingList();
     }
 }
 
@@ -7214,215 +7364,14 @@ function deleteShoppingItem(id) {
     state.esg.shoppingList = state.esg.shoppingList.filter(i => i.id !== id);
     saveData();
     renderShoppingList();
+    renderHomeShoppingList();
 }
 
 function clearCheckedShoppingItems() {
     state.esg.shoppingList = (state.esg.shoppingList || []).filter(i => !i.checked);
     saveData();
     renderShoppingList();
-}
-
-// 3. Controle de Validade / Desperdício Zero (ESG)
-function renderFreshFoods() {
-    const listContainer = document.getElementById('esg-food-list');
-    if (!listContainer) return;
-    
-    const items = state.esg.freshFoods || [];
-    listContainer.innerHTML = '';
-    
-    if (items.length === 0) {
-        listContainer.innerHTML = `<div style="text-align: center; font-size: 0.75rem; color: var(--text-muted); padding: 12px;">Nenhum alimento cadastrado na validade.</div>`;
-        return;
-    }
-    
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    
-    // Sort by expiration date (closest first)
-    items.sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
-    
-    items.forEach(item => {
-        const expiry = new Date(item.expiryDate);
-        expiry.setHours(0,0,0,0);
-        
-        const diffTime = expiry - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        let badgeClass = 'success';
-        let badgeText = `${diffDays}d restantes`;
-        
-        if (diffDays <= 1) {
-            badgeClass = 'danger';
-            badgeText = diffDays < 0 ? 'Vencido!' : (diffDays === 0 ? 'Vence Hoje!' : 'Vence Amanhã!');
-        } else if (diffDays <= 3) {
-            badgeClass = 'warning';
-            badgeText = `${diffDays}d restantes`;
-        }
-        
-        const card = document.createElement('div');
-        card.className = 'food-item-card';
-        card.innerHTML = `
-            <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px;">
-                <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</span>
-                <span style="font-size: 0.68rem; color: var(--text-muted);">Qtd: ${item.qty} • Vence em: ${expiry.toLocaleDateString('pt-BR')}</span>
-            </div>
-            <div style="display: flex; gap: 6px; align-items: center;">
-                <span class="expiry-badge ${badgeClass}">${badgeText}</span>
-                <button type="button" class="btn-icon text-success" onclick="consumeFreshFood('${item.id}')" title="Consumido" style="background: rgba(16,185,129,0.1); border: none; cursor: pointer; padding: 4px; border-radius: 4px;"><i data-lucide="check" style="width: 14px; height: 14px;"></i></button>
-                <button type="button" class="btn-icon text-danger" onclick="wasteFreshFood('${item.id}')" title="Desperdiçado (Lixo)" style="background: rgba(239,68,68,0.1); border: none; cursor: pointer; padding: 4px; border-radius: 4px;"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
-            </div>
-        `;
-        listContainer.appendChild(card);
-    });
-    
-    safeCreateIcons();
-}
-
-function openEsgFoodModal(prefilledName = '') {
-    const modal = document.getElementById('modal-esg-food');
-    if (!modal) return;
-    
-    modal.classList.add('active');
-    document.getElementById('esg-food-form').reset();
-    
-    if (prefilledName) {
-        document.getElementById('esg-food-name').value = prefilledName;
-        document.getElementById('esg-food-days').value = '5'; // default validade
-        document.getElementById('esg-food-qty').value = '1 un';
-    }
-}
-
-function closeEsgFoodModal() {
-    const modal = document.getElementById('modal-esg-food');
-    if (modal) modal.classList.remove('active');
-}
-
-function saveEsgFood(event) {
-    event.preventDefault();
-    const name = document.getElementById('esg-food-name').value.trim();
-    const qty = document.getElementById('esg-food-qty').value.trim();
-    const days = parseInt(document.getElementById('esg-food-days').value) || 3;
-    
-    if (!name || !qty) return;
-    
-    const today = new Date();
-    const expiry = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
-    
-    const newItem = {
-        id: 'food_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-        name: name,
-        qty: qty,
-        addedDate: today.toISOString().substring(0, 10),
-        expiryDate: expiry.toISOString().substring(0, 10)
-    };
-    
-    if (!state.esg.freshFoods) state.esg.freshFoods = [];
-    state.esg.freshFoods.push(newItem);
-    
-    saveData();
-    closeEsgFoodModal();
-    renderEsg();
-    renderHome(); // Updates the widget on home
-}
-
-function consumeFreshFood(id) {
-    const item = state.esg.freshFoods.find(i => i.id === id);
-    if (item) {
-        // Log action to state
-        if (!state.esg.foodLogs) state.esg.foodLogs = [];
-        state.esg.foodLogs.push({
-            id: 'log_' + Date.now(),
-            date: new Date().toISOString().substring(0, 10),
-            name: item.name,
-            action: 'consumed'
-        });
-        
-        // Remove from list
-        state.esg.freshFoods = state.esg.freshFoods.filter(i => i.id !== id);
-        
-        saveData();
-        renderEsg();
-        renderHome();
-        alert(`Você consumiu ${item.name} a tempo! +10 pontos no seu FlyScore por evitar o desperdício! 🎉`);
-    }
-}
-
-function wasteFreshFood(id) {
-    const item = state.esg.freshFoods.find(i => i.id === id);
-    if (item) {
-        if (confirm(`Confirmar descarte/desperdício de ${item.name}? Isso impactará seu FlyScore.`)) {
-            // Log action to state
-            if (!state.esg.foodLogs) state.esg.foodLogs = [];
-            state.esg.foodLogs.push({
-                id: 'log_' + Date.now(),
-                date: new Date().toISOString().substring(0, 10),
-                name: item.name,
-                action: 'wasted'
-            });
-            
-            // Remove from list
-            state.esg.freshFoods = state.esg.freshFoods.filter(i => i.id !== id);
-            
-            saveData();
-            renderEsg();
-            renderHome();
-        }
-    }
-}
-
-// 4. Widget da Home: Frutas Disponíveis
-function renderHomeFreshFoods() {
-    const homeList = document.getElementById('home-fresh-foods-list');
-    if (!homeList) return;
-    
-    const items = state.esg.freshFoods || [];
-    homeList.innerHTML = '';
-    
-    if (items.length === 0) {
-        homeList.innerHTML = `<div style="text-align: center; font-size: 0.72rem; color: var(--text-muted); padding: 8px;">Nenhum alimento na despensa de validade.</div>`;
-        return;
-    }
-    
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    
-    // Sort by expiration (closest first)
-    const sorted = [...items].sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
-    
-    // Show top 4
-    sorted.slice(0, 4).forEach(item => {
-        const expiry = new Date(item.expiryDate);
-        expiry.setHours(0,0,0,0);
-        
-        const diffTime = expiry - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        let color = '#10b981'; // Green
-        let status = `${diffDays} dias`;
-        
-        if (diffDays <= 1) {
-            color = '#ef4444'; // Red
-            status = diffDays < 0 ? 'Vencido' : (diffDays === 0 ? 'Hoje' : 'Amanhã');
-        } else if (diffDays <= 3) {
-            color = '#f59e0b'; // Yellow
-        }
-        
-        const div = document.createElement('div');
-        div.style.cssText = 'background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;';
-        div.innerHTML = `
-            <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
-                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</span>
-                <span style="font-size: 0.65rem; color: var(--text-muted);">${item.qty} • vence: ${expiry.toLocaleDateString('pt-BR')}</span>
-            </div>
-            <div style="display: flex; gap: 6px; align-items: center;">
-                <span style="font-size: 0.65rem; font-weight: 700; color: ${color}; background: ${color}1a; padding: 2px 6px; border-radius: 4px; border: 1px solid ${color}33;">${status}</span>
-                <button type="button" class="btn-icon text-success" onclick="consumeFreshFood('${item.id}')" title="Marcar como Consumido" style="background: transparent; border: none; cursor: pointer; padding: 2px; display: flex; align-items: center;"><i data-lucide="check" style="width: 14px; height: 14px;"></i></button>
-            </div>
-        `;
-        homeList.appendChild(div);
-    });
-    
-    safeCreateIcons();
+    renderHomeShoppingList();
 }
 
 // 5. Ficha de Academia e Frequência (Body)

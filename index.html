@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;600;700&display=swap" rel="stylesheet">
 
     <!-- CSS do App -->
-    <link rel="stylesheet" href="style.css?v=12">
+    <link rel="stylesheet" href="style.css?v=15">
 
     <!-- Diagnóstico de Erros JS (inline, sem custo de rede) -->
     <script>
@@ -144,14 +144,8 @@
                 <button class="drawer-link" onclick="selectDrawerTab('tab-projects')">
                     <i data-lucide="graduation-cap"></i> <span>📚 Cursos e Estudos</span>
                 </button>
-                <button class="drawer-link" onclick="selectDrawerTab('tab-esg')">
-                    <i data-lucide="leaf"></i> <span>🌱 Vida Sustentável</span>
-                </button>
-                <button class="drawer-link" onclick="selectDrawerTab('tab-mind')">
-                    <i data-lucide="brain"></i> <span>🧠 Bem Estar</span>
-                </button>
                 <button class="drawer-link" onclick="selectDrawerTab('tab-body')">
-                    <i data-lucide="heart"></i> <span>💪 Saúde</span>
+                    <i data-lucide="heart"></i> <span>🌱 Saúde e Sustentabilidade</span>
                 </button>
                 <button class="drawer-link" onclick="selectDrawerTab('tab-finances')">
                     <i data-lucide="wallet"></i> <span>💰 Finanças</span>
@@ -198,16 +192,18 @@
                             <p id="home-flyscore-desc" class="flyscore-desc">Suas ações diárias constroem sua pontuação.</p>
                         </div>
                         
-                        <!-- Painel Frutas Disponíveis -->
-                        <div class="glass-panel" id="home-fresh-foods-panel" style="padding: 16px; display: flex; flex-direction: column; gap: 12px; width: 100%;">
-                            <div class="title-with-icon" style="justify-content: flex-start; width: 100%;">
-                                <i data-lucide="apple" style="color: hsl(142, 60%, 45%);"></i>
-                                <h3 style="margin: 0; font-size: 1rem; font-weight: 800;">Alimentos Disponíveis</h3>
+                        <!-- Painel Lista de Compras (Simplificado) -->
+                        <div class="glass-panel" id="home-shopping-panel" style="padding: 16px; display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                            <div class="panel-header space-between" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); margin: 0; align-items: center; width: 100%;">
+                                <div class="title-with-icon" style="justify-content: flex-start;">
+                                    <i data-lucide="shopping-cart" style="color: var(--accent);"></i>
+                                    <h3 style="margin: 0; font-size: 0.95rem; font-weight: 800;">Lista de Compras</h3>
+                                </div>
                             </div>
-                            <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Consuma alimentos antes do vencimento para evitar desperdício!</p>
-                            <div id="home-fresh-foods-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 4px;">
-                                <!-- Inserido via JS -->
+                            <div id="home-shopping-list" class="style-scroll" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 4px;">
+                                <!-- Preenchido dinamicamente via JS -->
                             </div>
+                        </div>
                         </div>
                     </div>
                     
@@ -305,87 +301,58 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Módulo ESG -->
-                        <div class="glass-panel cockpit-card" onclick="switchMainTab('tab-esg')">
-                            <div class="cockpit-card-header">
-                                <span class="cockpit-card-title">
-                                    <i data-lucide="leaf" style="color: hsl(142, 60%, 45%);"></i>
-                                    🌱 Vida Sustentável
-                                </span>
-                                <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
-                            </div>
-                            <div class="cockpit-card-body">
-                                <div class="cockpit-metric-row">
-                                    <span>CO₂ Emissões:</span>
-                                    <span id="cockpit-esg-co2" class="cockpit-metric-value">0.0 Kg</span>
-                                </div>
-                                <div class="cockpit-metric-row">
-                                    <span>Dias Sem Carne:</span>
-                                    <span id="cockpit-esg-meatless" class="cockpit-metric-value">0</span>
-                                </div>
-                                <div class="cockpit-metric-row">
-                                    <span>Plásticos Evitados:</span>
-                                    <span id="cockpit-esg-plastic" class="cockpit-metric-value">0</span>
-                                </div>
-                                <div class="cockpit-progress-container">
-                                    <div id="cockpit-esg-progress" class="cockpit-progress-bar" style="background: hsl(142, 60%, 45%);"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Módulo Mind -->
-                        <div class="glass-panel cockpit-card" onclick="switchMainTab('tab-mind')">
-                            <div class="cockpit-card-header">
-                                <span class="cockpit-card-title">
-                                    <i data-lucide="brain" class="text-primary"></i>
-                                    🧠 Bem Estar
-                                </span>
-                                <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
-                            </div>
-                            <div class="cockpit-card-body">
-                                <div class="cockpit-metric-row">
-                                    <span>Humor Médio:</span>
-                                    <span id="cockpit-mind-mood" class="cockpit-metric-value">N/A</span>
-                                </div>
-                                <div class="cockpit-metric-row">
-                                    <span>Nível de Energia:</span>
-                                    <span id="cockpit-mind-energy" class="cockpit-metric-value">N/A</span>
-                                </div>
-                                <div class="cockpit-metric-row">
-                                    <span>Práticas Feitas:</span>
-                                    <span id="cockpit-mind-practices" class="cockpit-metric-value">0</span>
-                                </div>
-                                <div class="cockpit-progress-container">
-                                    <div id="cockpit-mind-progress" class="cockpit-progress-bar" style="background: var(--primary);"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Módulo Body -->
-                        <div class="glass-panel cockpit-card" onclick="switchMainTab('tab-body')">
+                        <!-- Módulo Saúde & Bem-Estar -->
+                        <div class="glass-panel cockpit-card" onclick="switchMainTab('tab-body'); switchBodySubTab('health');">
                             <div class="cockpit-card-header">
                                 <span class="cockpit-card-title">
                                     <i data-lucide="heart" style="color: hsl(0, 80%, 55%);"></i>
-                                    💪 Saúde
+                                    🩺 Saúde & Bem-Estar
                                 </span>
                                 <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
                             </div>
                             <div class="cockpit-card-body">
                                 <div class="cockpit-metric-row">
-                                    <span>Água Consumida:</span>
+                                    <span>Humor Diário:</span>
+                                    <span id="cockpit-body-mood" class="cockpit-metric-value">N/A</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Sono / Exercício:</span>
+                                    <span id="cockpit-body-sleep-exercise" class="cockpit-metric-value">0.0h / 0m</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Água (Hoje):</span>
                                     <span id="cockpit-body-water" class="cockpit-metric-value">0/8 copos</span>
-                                </div>
-                                <div class="cockpit-metric-row">
-                                    <span>Média de Sono:</span>
-                                    <span id="cockpit-body-sleep" class="cockpit-metric-value">0.0h</span>
-                                </div>
-                                <div class="cockpit-metric-row">
-                                    <span>Exercícios (Min):</span>
-                                    <span id="cockpit-body-exercise" class="cockpit-metric-value">0 min</span>
                                 </div>
                                 <div class="cockpit-progress-container">
                                     <div id="cockpit-body-progress" class="cockpit-progress-bar" style="background: hsl(0, 80%, 55%);"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Módulo Sustentabilidade -->
+                        <div class="glass-panel cockpit-card" onclick="switchMainTab('tab-body'); switchBodySubTab('sustainable');">
+                            <div class="cockpit-card-header">
+                                <span class="cockpit-card-title">
+                                    <i data-lucide="leaf" style="color: hsl(142, 60%, 45%);"></i>
+                                    🍃 Sustentabilidade
+                                </span>
+                                <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+                            </div>
+                            <div class="cockpit-card-body">
+                                <div class="cockpit-metric-row">
+                                    <span>Energia Elétrica:</span>
+                                    <span id="cockpit-esg-energy" class="cockpit-metric-value">0.0 kWh</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Água da Casa:</span>
+                                    <span id="cockpit-esg-water" class="cockpit-metric-value">0 L</span>
+                                </div>
+                                <div class="cockpit-metric-row">
+                                    <span>Combustível / Gás:</span>
+                                    <span id="cockpit-esg-fuel-gas" class="cockpit-metric-value">0L / 0Kg</span>
+                                </div>
+                                <div class="cockpit-progress-container">
+                                    <div id="cockpit-esg-progress" class="cockpit-progress-bar" style="background: hsl(142, 60%, 45%);"></div>
                                 </div>
                             </div>
                         </div>
@@ -662,165 +629,28 @@
                 </section>
             </div>
 
-            <!-- ABA: ESG Flies -->
-            <div id="tab-esg" class="tab-content">
-                <section class="tasks-column" style="height: 100%;">
-                    <div class="glass-panel tasks-panel" style="display: flex; flex-direction: column; height: 100%;">
-                        <div class="panel-header space-between">
-                            <div class="title-with-icon">
-                                <i data-lucide="leaf" style="color: hsl(142, 60%, 45%);"></i>
-                                <h2>🌱 Vida Sustentável</h2>
-                            </div>
-                            <button class="btn-primary btn-sm" onclick="openEsgLogModal()" style="padding: 6px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
-                                <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Novo
-                            </button>
-                        </div>
-                        
-                        <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
-                            <!-- Métricas Consolidadas -->
-                            <div class="esg-stats-grid">
-                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
-                                    <span class="stat-label">Água Diária (Média)</span>
-                                    <span class="stat-value text-success" id="esg-stat-water">0.0 L</span>
-                                </div>
-                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
-                                    <span class="stat-label">Pegada CO₂ Semanal</span>
-                                    <span class="stat-value" id="esg-stat-co2" style="color: var(--accent);">0.0 Kg</span>
-                                </div>
-                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
-                                    <span class="stat-label">Refeições Plant-Based</span>
-                                    <span class="stat-value" id="esg-stat-meatless" style="color: var(--warning);">0</span>
-                                </div>
-                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
-                                    <span class="stat-label">Resíduos Evitados</span>
-                                    <span class="stat-value" id="esg-stat-waste" style="color: var(--text-muted);">0</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Lista de Compras & Desperdício Zero -->
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;" class="finance-dash-grid">
-                                <!-- Lista de Compras -->
-                                <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 12px; width: 100%;">
-                                    <div class="panel-header space-between" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); margin: 0; align-items: center;">
-                                        <div class="title-with-icon">
-                                            <i data-lucide="shopping-cart" style="color: hsl(142, 60%, 45%);"></i>
-                                            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin: 0;">Lista de Compras</h4>
-                                        </div>
-                                        <button class="btn-secondary btn-sm" onclick="clearCheckedShoppingItems()" style="padding: 4px 8px; font-size: 0.7rem; border-radius: 4px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">Limpar Comprados</button>
-                                    </div>
-                                    <form id="esg-shopping-form" onsubmit="addShoppingItem(event)" style="display: flex; gap: 8px; margin: 0;">
-                                        <input type="text" id="shopping-item-name" class="form-control" placeholder="Item (Ex: Banana, Ovos...)" required style="flex: 1; font-size: 0.8rem; padding: 6px 10px; height: 34px;">
-                                        <select id="shopping-item-category" class="form-control" style="width: 100px; font-size: 0.8rem; padding: 6px; height: 34px;">
-                                            <option value="Hortifrúti">Hortifrúti</option>
-                                            <option value="Frios/Proteínas">Proteínas</option>
-                                            <option value="Mercearia">Mercearia</option>
-                                            <option value="Outros">Outros</option>
-                                        </select>
-                                        <button type="submit" class="btn-primary" style="padding: 6px 12px; height: 34px; display: flex; align-items: center; justify-content: center;"><i data-lucide="plus" style="width: 14px; height: 14px;"></i></button>
-                                    </form>
-                                    <div id="esg-shopping-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
-                                        <!-- Inserido dinamicamente via JS -->
-                                    </div>
-                                </div>
-
-                                <!-- Controle de Validade / Desperdício Zero -->
-                                <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 12px; width: 100%;">
-                                    <div class="panel-header space-between" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); margin: 0; align-items: center;">
-                                        <div class="title-with-icon">
-                                            <i data-lucide="calendar-clock" style="color: var(--warning);"></i>
-                                            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin: 0;">Validade de Alimentos</h4>
-                                        </div>
-                                        <button type="button" class="btn-primary btn-sm" onclick="openEsgFoodModal()" style="padding: 4px 8px; font-size: 0.7rem; display: flex; align-items: center; gap: 4px; border-radius: 4px;"><i data-lucide="plus" style="width: 12px; height: 12px;"></i> Novo</button>
-                                    </div>
-                                    <div id="esg-food-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
-                                        <!-- Inserido dinamicamente via JS -->
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Histórico de Sustentabilidade -->
-                            <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015);">
-                                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Histórico de Ações Sustentáveis</h4>
-                                <div class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
-                                    <table class="finance-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;">
-                                        <thead>
-                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
-                                                <th style="padding: 8px;">Data</th>
-                                                <th style="padding: 8px;">Água (L)</th>
-                                                <th style="padding: 8px;">CO₂ (Kg)</th>
-                                                <th style="padding: 8px;">Sem Carne</th>
-                                                <th style="padding: 8px;">Resíduos</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="esg-history-tbody">
-                                            <!-- Preenchido dinamicamente via JS -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            <!-- ABA: Mind Flies -->
-            <div id="tab-mind" class="tab-content">
-                <section class="tasks-column" style="height: 100%;">
-                    <div class="glass-panel tasks-panel" style="display: flex; flex-direction: column; height: 100%;">
-                        <div class="panel-header space-between">
-                            <div class="title-with-icon">
-                                <i data-lucide="brain" class="text-primary"></i>
-                                <h2>🧠 Bem Estar</h2>
-                            </div>
-                            <button class="btn-primary btn-sm" onclick="openMindLogModal()" style="padding: 6px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
-                                <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Novo
-                            </button>
-                        </div>
-                        
-                        <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
-                            <!-- Resumos de Saúde Mental -->
-                            <div class="esg-stats-grid">
-                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
-                                    <span class="stat-label">Humor Médio</span>
-                                    <span class="stat-value text-success" id="mind-stat-mood">N/A</span>
-                                </div>
-                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
-                                    <span class="stat-label">Energia Média</span>
-                                    <span class="stat-value" id="mind-stat-energy" style="color: var(--accent);">N/A</span>
-                                </div>
-                                <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
-                                    <span class="stat-label">Práticas Realizadas</span>
-                                    <span class="stat-value" id="mind-stat-practices" style="color: var(--warning);">0</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Grade de Humor Mensal -->
-                            <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015);">
-                                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Histórico Emocional & Notas</h4>
-                                <div id="mind-history-container" style="display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto; padding-right: 4px;">
-                                    <!-- Inserido dinamicamente via JS -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
 
             <!-- ABA: Body Flies -->
             <div id="tab-body" class="tab-content">
                 <section class="tasks-column" style="height: 100%;">
                     <div class="glass-panel tasks-panel" style="display: flex; flex-direction: column; height: 100%;">
-                        <div class="panel-header space-between">
+                        <div class="panel-header space-between" style="border-bottom: none; padding-bottom: 0;">
                             <div class="title-with-icon">
                                 <i data-lucide="heart" style="color: hsl(0, 80%, 55%);"></i>
-                                <h2>💪 Saúde</h2>
+                                <h2>🌱 Saúde e Sustentabilidade</h2>
                             </div>
-                            <button class="btn-primary btn-sm" onclick="openBodyLogModal()" style="padding: 6px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
+                            <button class="btn-primary btn-sm" id="btn-body-main-action" onclick="handleBodyMainAction()" style="padding: 6px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
                                 <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Novo
                             </button>
                         </div>
                         
-                        <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                        <!-- Sub-abas do Saúde e Sustentabilidade -->
+                        <div class="body-sub-tabs" style="display: flex; gap: 6px; margin: 12px 16px 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; overflow-x: auto; width: calc(100% - 32px);">
+                            <button class="sub-tab-btn active" id="btn-body-tab-health" onclick="switchBodySubTab('health')">🩺 Saúde & Bem-Estar</button>
+                            <button class="sub-tab-btn" id="btn-body-tab-sustainable" onclick="switchBodySubTab('sustainable')">🍃 Sustentabilidade</button>
+                        </div>
+                        
+                        <div id="body-subtab-health-content" style="flex: 1; overflow-y: auto; padding: 0 16px 16px 16px; display: flex; flex-direction: column; gap: 16px;" class="style-scroll">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="finance-dash-grid">
                                 <!-- Hidratação Card (Compacto e Colapsável) -->
                                 <div class="glass-panel water-tracker-card collapsible-card" id="card-body-water" style="border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); width: 100%; padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between; min-height: 120px;">
@@ -854,7 +684,7 @@
                                     </div>
                                     
                                     <div class="card-collapsible-content" style="margin-top: 4px;">
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%;">
+                                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%;">
                                             <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
                                                 <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Horas Sono</span>
                                                 <span id="body-avg-sleep" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">0.0h</span>
@@ -866,6 +696,14 @@
                                             <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
                                                 <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Exercício</span>
                                                 <span id="body-avg-exercise" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">0 min</span>
+                                            </div>
+                                            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
+                                                <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Humor Médio</span>
+                                                <span id="body-avg-mood" style="font-size: 0.82rem; font-weight: 700; color: var(--success);">N/A</span>
+                                            </div>
+                                            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
+                                                <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Energia Média</span>
+                                                <span id="body-avg-energy" style="font-size: 0.82rem; font-weight: 700; color: var(--accent);">N/A</span>
                                             </div>
                                             <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
                                                 <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Último Peso</span>
@@ -926,9 +764,83 @@
                                                 <th style="padding: 8px;">Qualidade</th>
                                                 <th style="padding: 8px;">Exercício</th>
                                                 <th style="padding: 8px;">Peso</th>
+                                                <th style="padding: 8px;">Humor</th>
+                                                <th style="padding: 8px;">Energia</th>
                                             </tr>
                                         </thead>
                                         <tbody id="body-history-tbody">
+                                            <!-- Preenchido dinamicamente via JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CONTEÚDO SUB-ABA: Sustentabilidade -->
+                        <div id="body-subtab-sustainable-content" style="display: none; flex: 1; overflow-y: auto; padding: 0 16px 16px 16px; flex-direction: column; gap: 16px;" class="style-scroll">
+                            <!-- Lista de Compras -->
+                            <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                                <div class="panel-header space-between" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); margin: 0; align-items: center;">
+                                    <div class="title-with-icon">
+                                        <i data-lucide="shopping-cart" style="color: var(--accent);"></i>
+                                        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 0;">Lista de Compras Consciente</h4>
+                                    </div>
+                                    <button class="btn-secondary btn-sm" onclick="clearCheckedShoppingItems()" style="padding: 4px 8px; font-size: 0.7rem; border-radius: 4px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">Limpar Comprados</button>
+                                </div>
+                                <form id="esg-shopping-form" onsubmit="addShoppingItem(event)" style="display: flex; gap: 8px; margin: 0;">
+                                    <input type="text" id="shopping-item-name" class="form-control" placeholder="Item (Ex: Banana, Ovos...)" required style="flex: 1; font-size: 0.8rem; padding: 6px 10px; height: 34px;">
+                                    <button type="submit" class="btn-primary" style="padding: 6px 12px; height: 34px; display: flex; align-items: center; justify-content: center;"><i data-lucide="plus" style="width: 14px; height: 14px;"></i></button>
+                                </form>
+                                <div id="esg-shopping-list" class="style-scroll" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
+                                    <!-- Inserido dinamicamente via JS -->
+                                </div>
+                            </div>
+
+                            <!-- Consumos Resumo -->
+                            <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                                <div class="panel-header space-between" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); margin: 0; align-items: center;">
+                                    <div class="title-with-icon">
+                                        <i data-lucide="gauge" style="color: var(--accent);"></i>
+                                        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 0;">Métricas de Consumo Doméstico</h4>
+                                    </div>
+                                </div>
+                                <div class="esg-stats-grid">
+                                    <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                        <span class="stat-label">Energia Elétrica</span>
+                                        <span class="stat-value" id="sust-stat-energy" style="color: var(--accent);">0.0 kWh</span>
+                                    </div>
+                                    <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                        <span class="stat-label">Água da Casa</span>
+                                        <span class="stat-value text-success" id="sust-stat-water">0 L</span>
+                                    </div>
+                                    <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                        <span class="stat-label">Gás GLP</span>
+                                        <span class="stat-value" id="sust-stat-glp" style="color: var(--warning);">0.0 Kg</span>
+                                    </div>
+                                    <div class="stat-card" style="align-items: flex-start; padding: 12px 16px;">
+                                        <span class="stat-label">Combustível</span>
+                                        <span class="stat-value" id="sust-stat-fuel" style="color: var(--danger);">0.0 L</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Histórico de Consumo -->
+                            <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015);">
+                                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Histórico de Leituras & Contas</h4>
+                                <div class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
+                                    <table class="finance-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                                                <th style="padding: 8px;">Período</th>
+                                                <th style="padding: 8px;">Frequência</th>
+                                                <th style="padding: 8px;">Energia</th>
+                                                <th style="padding: 8px;">Água</th>
+                                                <th style="padding: 8px;">Gás GLP</th>
+                                                <th style="padding: 8px;">Combustível</th>
+                                                <th style="padding: 8px; width: 80px;">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sustainable-history-tbody">
                                             <!-- Preenchido dinamicamente via JS -->
                                         </tbody>
                                     </table>
@@ -1851,9 +1763,13 @@
                     <label for="fixed-expense-desc">Observação (Opcional)</label>
                     <input type="text" id="fixed-expense-desc" class="form-control" placeholder="Ex: Dividido com companheiro de quarto">
                 </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 12px; margin-bottom: 12px;">
-                    <input type="checkbox" id="fixed-expense-only-current-month" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
-                    <label for="fixed-expense-only-current-month" id="label-fixed-expense-only-current-month" style="margin: 0; cursor: pointer; font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Alterar valor apenas para o mês selecionado</label>
+                <div class="form-group" style="margin-top: 12px; margin-bottom: 12px;">
+                    <label for="fixed-expense-scope" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Abrangência da Alteração / Exclusão</label>
+                    <select id="fixed-expense-scope" class="form-control">
+                        <option value="only-current" selected>Apenas o mês selecionado</option>
+                        <option value="from-current-forward">Este mês e os próximos meses (Futuras)</option>
+                        <option value="from-current-backward">Este mês e os meses anteriores (Passadas)</option>
+                    </select>
                 </div>
                 <div class="modal-actions" style="margin-top: 20px;">
                     <button type="button" id="btn-delete-fixed-expense" class="btn-danger hidden" onclick="deleteFixedExpense()">Excluir</button>
@@ -2185,6 +2101,28 @@
                         <option value="1">⭐ Péssimo</option>
                     </select>
                 </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label for="body-log-mood">Humor do Dia</label>
+                        <select id="body-log-mood" class="form-control" required>
+                            <option value="5">🤩 Excelente</option>
+                            <option value="4" selected>😊 Bom</option>
+                            <option value="3">😐 Regular</option>
+                            <option value="2">😔 Ruim</option>
+                            <option value="1">😫 Péssimo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="body-log-energy">Nível de Energia</label>
+                        <select id="body-log-energy" class="form-control" required>
+                            <option value="5">🔋 Muito Alto</option>
+                            <option value="4" selected>⚡ Alto</option>
+                            <option value="3">😐 Médio</option>
+                            <option value="2">🪫 Baixo</option>
+                            <option value="1">💀 Esgotado</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label>Atividade Física</label>
                     <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px;">
@@ -2259,33 +2197,75 @@
         </div>
     </div>
 
-    <!-- MODAL: Adicionar Alimento/Validade (ESG) -->
-    <div id="modal-esg-food" class="modal-overlay">
+    
+    <!-- MODAL: Registrar Consumo (Sustentabilidade) -->
+    <div id="modal-sustainable-log" class="modal-overlay">
         <div class="modal-content glass-card" style="max-width: 400px;">
             <div class="bottom-sheet-grabber"></div>
             <div class="modal-header">
-                <h3>Cadastrar Alimento Fresco</h3>
-                <button type="button" class="btn-close-modal" onclick="closeEsgFoodModal()"><i data-lucide="x"></i></button>
+                <h3>Registrar Consumo Doméstico</h3>
+                <button type="button" class="btn-close-modal" onclick="closeSustainableLogModal()"><i data-lucide="x"></i></button>
             </div>
-            <form id="esg-food-form" onsubmit="saveEsgFood(event)" style="margin: 0;">
+            <form id="sustainable-log-form" onsubmit="saveSustainableLog(event)" style="margin: 0;">
                 <div class="form-group">
-                    <label for="esg-food-name">Nome do Alimento / Fruta</label>
-                    <input type="text" id="esg-food-name" class="form-control" placeholder="Ex: Morango, Alface, Leite" required>
+                    <label for="sust-log-frequency">Frequência</label>
+                    <select id="sust-log-frequency" class="form-control" onchange="onSustFrequencyChange()" required>
+                        <option value="weekly" selected>Semanal</option>
+                        <option value="monthly">Mensal</option>
+                        <option value="quarterly">Trimestral</option>
+                    </select>
+                </div>
+                
+                <!-- Campos dinâmicos de período de referência -->
+                <div class="form-group" id="sust-period-weekly-group">
+                    <label for="sust-log-date">Data de Referência (Qualquer dia da semana)</label>
+                    <input type="date" id="sust-log-date" class="form-control">
+                </div>
+                <div class="form-group hidden" id="sust-period-monthly-group">
+                    <label for="sust-log-month">Mês/Ano de Referência</label>
+                    <input type="month" id="sust-log-month" class="form-control">
+                </div>
+                <div class="form-group hidden" id="sust-period-quarterly-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label for="sust-log-quarter">Trimestre</label>
+                        <select id="sust-log-quarter" class="form-control">
+                            <option value="Q1">1º Trimestre</option>
+                            <option value="Q2">2º Trimestre</option>
+                            <option value="Q3">3º Trimestre</option>
+                            <option value="Q4">4º Trimestre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="sust-log-quarter-year">Ano</label>
+                        <input type="number" id="sust-log-quarter-year" class="form-control" value="2026" min="2020" max="2050">
+                    </div>
+                </div>
+
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label for="sust-log-energy">Energia (kWh)</label>
+                        <input type="number" id="sust-log-energy" class="form-control" min="0" step="0.1" placeholder="Ex: 120" required>
+                    </div>
+                    <div>
+                        <label for="sust-log-water">Água da Casa (L)</label>
+                        <input type="number" id="sust-log-water" class="form-control" min="0" placeholder="Ex: 5000" required>
+                    </div>
                 </div>
                 <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <div>
-                        <label for="esg-food-qty">Quantidade</label>
-                        <input type="text" id="esg-food-qty" class="form-control" placeholder="Ex: 5 unidades, 1L" required>
+                        <label for="sust-log-glp">Gás GLP (Kg)</label>
+                        <input type="number" id="sust-log-glp" class="form-control" min="0" step="0.1" placeholder="Ex: 13" required>
                     </div>
                     <div>
-                        <label for="esg-food-days">Validade (dias)</label>
-                        <input type="number" id="esg-food-days" class="form-control" min="1" placeholder="Ex: 5" required>
+                        <label for="sust-log-fuel">Combustível (L)</label>
+                        <input type="number" id="sust-log-fuel" class="form-control" min="0" step="0.1" placeholder="Ex: 35" required>
                     </div>
                 </div>
+
                 <div class="modal-actions" style="margin-top: 20px;">
                     <div class="flex-end">
-                        <button type="button" class="btn-secondary" onclick="closeEsgFoodModal()">Cancelar</button>
-                        <button type="submit" class="btn-accent">Cadastrar</button>
+                        <button type="button" class="btn-secondary" onclick="closeSustainableLogModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Gravar Registro</button>
                     </div>
                 </div>
             </form>
@@ -2374,7 +2354,7 @@
     <!-- Chart.js: versão pinada + bundle minificado -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
     <!-- App -->
-    <script src="app.js?v=14" defer></script>
+    <script src="app.js?v=17" defer></script>
     <!-- Service Worker: cache offline -->
     <script>
         if ('serviceWorker' in navigator) {
