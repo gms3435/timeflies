@@ -4284,3 +4284,46 @@ textarea.form-control {
     border-color: rgba(16, 185, 129, 0.3);
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
 }
+
+/* Card Collapsible System */
+.collapsible-card {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.collapsible-card.collapsed {
+    min-height: 44px !important;
+    height: 44px !important;
+}
+.collapsible-card.collapsed .card-collapsible-content {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    border-top-width: 0 !important;
+    pointer-events: none;
+}
+.card-collapsible-content {
+    max-height: 1000px;
+    opacity: 1;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, padding 0.3s ease, margin 0.3s ease;
+    width: 100%;
+}
+.collapse-trigger-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.25s ease, color 0.2s ease;
+}
+.collapse-trigger-btn:hover {
+    color: var(--text-main);
+}
+.collapsible-card.collapsed .collapse-trigger-btn {
+    transform: rotate(-90deg);
+}

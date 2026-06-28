@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;600;700&display=swap" rel="stylesheet">
 
     <!-- CSS do App -->
-    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="stylesheet" href="style.css?v=10">
 
     <!-- Diagnóstico de Erros JS (inline, sem custo de rede) -->
     <script>
@@ -173,7 +173,7 @@
         <!-- MAIN LAYOUT -->
         <main class="app-main">
             <!-- ABA: Home -->
-            <div id="tab-home" class="tab-content active">
+            <div id="tab-home" class="tab-content active" style="overflow-y: auto; padding-right: 4px;">
                 <section class="home-welcome-header">
                     <h2 id="home-greeting">Olá! Carregando seu dia...</h2>
                     <p id="home-date-subtitle">Carregando data...</p>
@@ -533,11 +533,11 @@
                                 <h2>Learn Flies</h2>
                             </div>
                             <div class="flex-end" style="gap: 8px;">
-                                <button class="btn-secondary" id="btn-learn-share" onclick="exportProjectsToWhatsApp()" style="padding: 10px 16px; display: inline-flex; align-items: center; gap: 6px;">
-                                    <i data-lucide="share-2"></i> WhatsApp
+                                <button class="btn-secondary btn-sm" id="btn-learn-share" onclick="exportProjectsToWhatsApp()" style="padding: 6px 10px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
+                                    <i data-lucide="share-2" style="width: 14px; height: 14px;"></i> WhatsApp
                                 </button>
-                                <button class="btn-primary" id="btn-learn-new-action" onclick="handleNewLearnAction()">
-                                    <i data-lucide="plus"></i> Novo Projeto / Disciplina
+                                <button class="btn-primary btn-sm" id="btn-learn-new-action" onclick="handleNewLearnAction()" style="padding: 6px 10px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
+                                    <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Novo
                                 </button>
                             </div>
                         </div>
@@ -671,8 +671,8 @@
                                 <i data-lucide="leaf" style="color: hsl(142, 60%, 45%);"></i>
                                 <h2>🌱 ESG Flies</h2>
                             </div>
-                            <button class="btn-primary" onclick="openEsgLogModal()">
-                                <i data-lucide="plus"></i> Registrar Hábitos ESG
+                            <button class="btn-primary btn-sm" onclick="openEsgLogModal()" style="padding: 6px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
+                                <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Novo
                             </button>
                         </div>
                         
@@ -772,8 +772,8 @@
                                 <i data-lucide="brain" class="text-primary"></i>
                                 <h2>🧠 Mind Flies</h2>
                             </div>
-                            <button class="btn-primary" onclick="openMindLogModal()">
-                                <i data-lucide="plus"></i> Novo Registro Mental
+                            <button class="btn-primary btn-sm" onclick="openMindLogModal()" style="padding: 6px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
+                                <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Novo
                             </button>
                         </div>
                         
@@ -815,45 +815,62 @@
                                 <i data-lucide="heart" style="color: hsl(0, 80%, 55%);"></i>
                                 <h2>💪 Body Flies</h2>
                             </div>
-                            <button class="btn-primary" onclick="openBodyLogModal()">
-                                <i data-lucide="plus"></i> Novo Registro Físico
+                            <button class="btn-primary btn-sm" onclick="openBodyLogModal()" style="padding: 6px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
+                                <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Novo
                             </button>
                         </div>
                         
-                               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="finance-dash-grid">
-                                <!-- Hidratação Card (Compacto) -->
-                                <div class="glass-panel water-tracker-card" style="border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); width: 100%; padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between; min-height: 120px;">
-                                    <h4 style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); margin: 0 0 2px 0;">Consumo de Água (Hoje)</h4>
-                                    <div class="water-cups-row" id="water-cups-container" style="margin: 4px 0; gap: 5px; min-height: 32px;">
-                                        <!-- Renderizado dinamicamente via JS -->
+                        <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="finance-dash-grid">
+                                <!-- Hidratação Card (Compacto e Colapsável) -->
+                                <div class="glass-panel water-tracker-card collapsible-card" id="card-body-water" style="border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); width: 100%; padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between; min-height: 120px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; cursor: pointer;" onclick="toggleCardCollapse('card-body-water')">
+                                        <h4 style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 6px;">
+                                            <i data-lucide="droplet" style="width: 12px; height: 12px; color: hsl(200, 85%, 45%);"></i>
+                                            Consumo de Água (Hoje)
+                                        </h4>
+                                        <button class="collapse-trigger-btn" type="button" style="padding: 0;"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></button>
                                     </div>
-                                    <div style="font-size: 0.92rem; font-weight: 800; color: hsl(200, 85%, 45%); margin: 2px 0;" id="water-stat-label">0 / 8 copos</div>
-                                    <div style="display: flex; gap: 6px; justify-content: center; width: 100%;">
-                                        <button class="btn-secondary btn-sm" onclick="adjustWaterCups(-1)" style="font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; height: 26px;">- Copo</button>
-                                        <button class="btn-primary btn-sm" onclick="adjustWaterCups(1)" style="background: hsl(200, 85%, 45%); border-color: hsl(200, 85%, 45%); color: #fff; font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; height: 26px;">+ Copo</button>
+                                    <div class="card-collapsible-content" style="display: flex; flex-direction: column; justify-content: space-between; flex: 1; align-items: center; margin-top: 4px;">
+                                        <div class="water-cups-row" id="water-cups-container" style="margin: 4px 0; gap: 5px; min-height: 32px;">
+                                            <!-- Renderizado dinamicamente via JS -->
+                                        </div>
+                                        <div style="font-size: 0.92rem; font-weight: 800; color: hsl(200, 85%, 45%); margin: 2px 0;" id="water-stat-label">0 / 8 copos</div>
+                                        <div style="display: flex; gap: 6px; justify-content: center; width: 100%;">
+                                            <button class="btn-secondary btn-sm" onclick="adjustWaterCups(-1)" style="font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; height: 26px;">- Copo</button>
+                                            <button class="btn-primary btn-sm" onclick="adjustWaterCups(1)" style="background: hsl(200, 85%, 45%); border-color: hsl(200, 85%, 45%); color: #fff; font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; height: 26px;">+ Copo</button>
+                                        </div>
                                     </div>
                                 </div>
                                 
-                                <!-- Sono & Exercícios Stats (Grid 2x2 Compacto) -->
-                                <div class="glass-panel" style="padding: 10px 14px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 6px; width: 100%; justify-content: space-between; min-height: 120px;">
-                                    <h4 style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); margin: 0 0 2px 0;">Atividade & Sono (Médias)</h4>
+                                <!-- Sono & Exercícios Stats (Grid 2x2 Colapsável) -->
+                                <div class="glass-panel collapsible-card" id="card-body-stats" style="padding: 10px 14px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; width: 100%; justify-content: space-between; min-height: 120px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; cursor: pointer;" onclick="toggleCardCollapse('card-body-stats')">
+                                        <h4 style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 6px;">
+                                            <i data-lucide="activity" style="width: 12px; height: 12px; color: var(--success);"></i>
+                                            Atividade & Sono (Médias)
+                                        </h4>
+                                        <button class="collapse-trigger-btn" type="button" style="padding: 0;"><i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i></button>
+                                    </div>
                                     
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%;">
-                                        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
-                                            <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Horas Sono</span>
-                                            <span id="body-avg-sleep" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">0.0h</span>
-                                        </div>
-                                        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
-                                            <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Qualidade</span>
-                                            <span id="body-avg-sleep-quality" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); white-space: nowrap;">N/A</span>
-                                        </div>
-                                        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
-                                            <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Exercício</span>
-                                            <span id="body-avg-exercise" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">0 min</span>
-                                        </div>
-                                        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
-                                            <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Último Peso</span>
-                                            <span id="body-last-weight" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">0.0 Kg</span>
+                                    <div class="card-collapsible-content" style="margin-top: 4px;">
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%;">
+                                            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
+                                                <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Horas Sono</span>
+                                                <span id="body-avg-sleep" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">0.0h</span>
+                                            </div>
+                                            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
+                                                <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Qualidade</span>
+                                                <span id="body-avg-sleep-quality" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); white-space: nowrap;">N/A</span>
+                                            </div>
+                                            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
+                                                <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Exercício</span>
+                                                <span id="body-avg-exercise" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">0 min</span>
+                                            </div>
+                                            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
+                                                <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Último Peso</span>
+                                                <span id="body-last-weight" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">0.0 Kg</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -930,11 +947,11 @@
                                 <h2>Money Flies</h2>
                             </div>
                             <div class="flex-end" style="gap: 8px;">
-                                <button class="btn-secondary" onclick="openCreditCardSettingsModal()" title="Configurações de Cartão" style="padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
-                                    <i data-lucide="credit-card" style="width: 16px; height: 16px;"></i> Gerenciar Cartões
+                                <button class="btn-secondary btn-sm" onclick="openCreditCardSettingsModal()" title="Configurações de Cartão" style="padding: 6px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
+                                    <i data-lucide="credit-card" style="width: 14px; height: 14px;"></i> Cartões
                                 </button>
-                                <button class="btn-primary" onclick="openFinanceTransactionModal()">
-                                    <i data-lucide="plus"></i> Novo Lançamento
+                                <button class="btn-primary btn-sm" onclick="openFinanceTransactionModal()" style="padding: 6px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; border-radius: var(--border-radius-sm);">
+                                    <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Novo
                                 </button>
                             </div>
                         </div>
@@ -1185,7 +1202,7 @@
             </div>
             
             <!-- ABA: Timer de Foco -->
-            <div id="tab-timer" class="tab-content">
+            <div id="tab-timer" class="tab-content" style="overflow-y: auto; padding-right: 4px;">
                 <section class="sidebar-column" style="width: 100%; max-width: 600px; margin: 0 auto;">
                     <!-- Timer de Execução -->
                     <div class="glass-panel timer-panel">
@@ -1232,7 +1249,7 @@
             </div>
 
             <!-- ABA: Assistente Smart Fit -->
-            <div id="tab-smartfit" class="tab-content">
+            <div id="tab-smartfit" class="tab-content" style="overflow-y: auto; padding-right: 4px;">
                 <section class="sidebar-column" style="width: 100%; max-width: 600px; margin: 0 auto;">
                     <!-- Smart Scheduling Assistant -->
                     <div class="glass-panel assistant-panel">
@@ -1259,7 +1276,7 @@
             </div>
             
             <!-- ABA: Métricas & Gráficos -->
-            <div id="tab-metrics" class="tab-content">
+            <div id="tab-metrics" class="tab-content" style="overflow-y: auto; padding-right: 4px;">
                 <section class="sidebar-column" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%;">
                     <!-- Gráfico de Alocação de Tempo -->
                     <div class="glass-panel metrics-panel collapsed" id="card-metric-time">
@@ -1352,7 +1369,7 @@
             </div>
 
             <!-- ABA: Ajustes & Segurança -->
-            <div id="tab-settings" class="tab-content">
+            <div id="tab-settings" class="tab-content" style="overflow-y: auto; padding-right: 4px; padding-bottom: 20px;">
                 <section class="sidebar-column" style="width: 100%; max-width: 680px; margin: 0 auto;">
                     <!-- Configurações de Segurança e Backup -->
                     <div class="glass-panel backup-panel" style="padding: 24px 28px;">
@@ -2355,7 +2372,7 @@
     <!-- Chart.js: versão pinada + bundle minificado -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
     <!-- App -->
-    <script src="app.js?v=11" defer></script>
+    <script src="app.js?v=12" defer></script>
     <!-- Service Worker: cache offline -->
     <script>
         if ('serviceWorker' in navigator) {

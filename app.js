@@ -619,6 +619,15 @@ function unlockAndInitializeApp(password, isFirstCreation = false) {
     // Renderiza todas as seções e abas
     renderAll();
     
+    // Restaurar painéis colapsados
+    try {
+        const collapsedList = JSON.parse(localStorage.getItem('tempus_collapsed_cards') || '[]');
+        collapsedList.forEach(cardId => {
+            const card = document.getElementById(cardId);
+            if (card) card.classList.add('collapsed');
+        });
+    } catch (e) {}
+    
     // Iniciar loop de alarmes
     setInterval(checkAgendaAlarms, 20000);
     
@@ -5424,7 +5433,7 @@ function renderFinanceCash() {
         tbody.parentElement.style.display = 'none';
     } else {
         if (emptyMsg) emptyMsg.classList.add('hidden');
-        tbody.parentElement.style.display = 'table';
+        tbody.parentElement.style.display = '';
         
         monthlyCash.forEach(item => {
             const tr = document.createElement('tr');
@@ -5512,7 +5521,7 @@ function renderFinanceCard() {
         tbody.parentElement.style.display = 'none';
     } else {
         if (emptyMsg) emptyMsg.classList.add('hidden');
-        tbody.parentElement.style.display = 'table';
+        tbody.parentElement.style.display = '';
         
         cardExpenses.forEach(item => {
             const tr = document.createElement('tr');
@@ -5578,7 +5587,7 @@ function renderFinanceIncome() {
         tbody.parentElement.style.display = 'none';
     } else {
         if (emptyMsg) emptyMsg.classList.add('hidden');
-        tbody.parentElement.style.display = 'table';
+        tbody.parentElement.style.display = '';
         
         monthlyIncomes.forEach(item => {
             const tr = document.createElement('tr');
@@ -5623,7 +5632,7 @@ function renderFinanceFixed() {
         tbody.parentElement.style.display = 'none';
     } else {
         if (emptyMsg) emptyMsg.classList.add('hidden');
-        tbody.parentElement.style.display = 'table';
+        tbody.parentElement.style.display = '';
         
         fixedList.forEach(item => {
             const tr = document.createElement('tr');
@@ -7835,5 +7844,22 @@ window.startWorkoutRestTimer = startWorkoutRestTimer;
 window.stopWorkoutRestTimer = stopWorkoutRestTimer;
 
 window.exportProjectsToWhatsApp = exportProjectsToWhatsApp;
+
+function toggleCardCollapse(cardId) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    card.classList.toggle('collapsed');
+    try {
+        const collapsedList = JSON.parse(localStorage.getItem('tempus_collapsed_cards') || '[]');
+        if (card.classList.contains('collapsed')) {
+            if (!collapsedList.includes(cardId)) collapsedList.push(cardId);
+        } else {
+            const idx = collapsedList.indexOf(cardId);
+            if (idx > -1) collapsedList.splice(idx, 1);
+        }
+        localStorage.setItem('tempus_collapsed_cards', JSON.stringify(collapsedList));
+    } catch (e) {}
+}
+window.toggleCardCollapse = toggleCardCollapse;
 
 
