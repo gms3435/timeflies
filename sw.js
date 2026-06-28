@@ -1,7 +1,7 @@
-// TimeFlies — Service Worker v9
+// TimeFlies — Service Worker v10
 // Estratégia: Cache First para recursos estáticos, Network First para CDNs
 
-const CACHE_NAME = 'timeflies-v10';
+const CACHE_NAME = 'timeflies-v11';
 
 // Recursos locais que serão sempre cacheados no install
 const STATIC_ASSETS = [
