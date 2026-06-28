@@ -1030,8 +1030,10 @@ function renderHome() {
     });
     const freeMins = 1440 - occupiedMins;
     
-    const totalTasks = state.tasks.length;
-    const completedTasks = state.tasks.filter(t => t.completed).length;
+    // Filter tasks for the selected day
+    const dayTasks = state.tasks.filter(t => t.day === state.currentDay);
+    const totalTasks = dayTasks.length;
+    const completedTasks = dayTasks.filter(t => t.completed).length;
     
     const timeCommittedEl = document.getElementById('cockpit-time-committed');
     const timeFreeEl = document.getElementById('cockpit-time-free');
@@ -1042,7 +1044,21 @@ function renderHome() {
     if (timeFreeEl) timeFreeEl.textContent = `${(freeMins / 60).toFixed(1)}h`;
     if (timeTasksEl) timeTasksEl.textContent = `${completedTasks}/${totalTasks}`;
     if (timeProgressEl) {
-        timeProgressEl.style.width = `${flyscores.core}%`;
+        const pct = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+        timeProgressEl.style.width = `${pct}%`;
+    }
+
+    // Highlight the active day in the cockpit day selector
+    const cockpitSelector = document.getElementById('cockpit-day-selector');
+    if (cockpitSelector) {
+        const btns = cockpitSelector.querySelectorAll('.cockpit-day-btn');
+        btns.forEach(btn => {
+            if (btn.dataset.day === state.currentDay) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
     }
 
     // 3.2. Money Flies Summary
@@ -2192,7 +2208,10 @@ function getMonthlyFinancialSummary(monthStr) {
     });
     
     const fixedList = state.finances.fixedExpenses || [];
-    const totalFixed = fixedList.reduce((acc, f) => acc + f.amount, 0);
+    const totalFixed = fixedList.reduce((acc, f) => {
+        const val = f.monthlyAmounts && f.monthlyAmounts[monthStr] !== undefined ? f.monthlyAmounts[monthStr] : f.amount;
+        return acc + val;
+    }, 0);
     
     const totalExpenses = totalCash + totalCard + totalFixed;
     const balance = totalIncome - totalExpenses;
@@ -4127,25 +4146,46 @@ function renderProjects() {
     if (!container) return;
     container.innerHTML = '';
     
-    const projects = state.projects || [];
+    const allProjects = state.projects || [];
     
-    if (projects.length === 0) {
-        if (emptyMsg) emptyMsg.classList.remove('hidden');
+    if (allProjects.length === 0) {
+        if (emptyMsg) {
+            emptyMsg.innerHTML = `<i data-lucide="folder-open"></i> Nenhum projeto ou disciplina cadastrada.`;
+            emptyMsg.classList.remove('hidden');
+        }
         if (remCountEl) remCountEl.textContent = '0';
         if (gpaEl) gpaEl.textContent = '0.00';
         if (hoursEl) hoursEl.textContent = '0.0h';
         return;
     }
-    
-    if (emptyMsg) emptyMsg.classList.add('hidden');
+
+    const typeFilter = document.getElementById('filter-project-type') ? document.getElementById('filter-project-type').value : 'all';
+    const statusFilter = document.getElementById('filter-project-status') ? document.getElementById('filter-project-status').value : 'all';
+
+    let displayProjects = [...allProjects];
+    if (typeFilter !== 'all') {
+        displayProjects = displayProjects.filter(p => p.type === typeFilter);
+    }
+    if (statusFilter !== 'all') {
+        displayProjects = displayProjects.filter(p => p.status === statusFilter);
+    }
+
+    if (displayProjects.length === 0) {
+        if (emptyMsg) {
+            emptyMsg.innerHTML = `<i data-lucide="folder-open"></i> Nenhum projeto encontrado para os filtros selecionados.`;
+            emptyMsg.classList.remove('hidden');
+        }
+    } else {
+        if (emptyMsg) emptyMsg.classList.add('hidden');
+    }
     
     let totalStudyMinutes = 0;
     
     // Sort projects: andamento first, then planejado, then concluído
     const statusWeight = { andamento: 3, planejado: 2, concluido: 1 };
-    projects.sort((a, b) => statusWeight[b.status] - statusWeight[a.status]);
+    displayProjects.sort((a, b) => statusWeight[b.status] - statusWeight[a.status]);
     
-    projects.forEach(p => {
+    displayProjects.forEach(p => {
         const card = document.createElement('div');
         const isExpanded = expandedProjects.has(p.id);
         card.className = `project-card border-${p.status} ${isExpanded ? 'expanded' : 'collapsed'}`;
@@ -4249,15 +4289,22 @@ function renderProjects() {
         container.appendChild(card);
     });
     
-    // Compute academics KPIs
-    const remDisciplines = projects.filter(p => p.status !== 'concluido' && p.type === 'disciplina').length;
+    // Compute academics KPIs based on ALL projects
+    const remDisciplines = allProjects.filter(p => p.status !== 'concluido' && p.type === 'disciplina').length;
     if (remCountEl) remCountEl.textContent = remDisciplines;
     
-    const gradedProjects = projects.filter(p => p.status === 'concluido' && p.grade !== null && p.grade !== undefined && p.grade !== '');
+    const gradedProjects = allProjects.filter(p => p.status === 'concluido' && p.grade !== null && p.grade !== undefined && p.grade !== '');
     const gpa = gradedProjects.length > 0 ? (gradedProjects.reduce((acc, p) => acc + parseFloat(p.grade), 0) / gradedProjects.length).toFixed(2) : '0.00';
     if (gpaEl) gpaEl.textContent = gpa;
     
-    if (hoursEl) hoursEl.textContent = `${(totalStudyMinutes / 60).toFixed(1)}h`;
+    // Calculate total study minutes from ALL projects
+    let overallStudyMinutes = 0;
+    allProjects.forEach(p => {
+        const projTasks = state.tasks.filter(t => t.projectId === p.id);
+        const studyMins = projTasks.filter(t => t.completed).reduce((acc, t) => acc + t.duration, 0);
+        overallStudyMinutes += studyMins;
+    });
+    if (hoursEl) hoursEl.textContent = `${(overallStudyMinutes / 60).toFixed(1)}h`;
     
     safeCreateIcons();
 }
@@ -4560,18 +4607,39 @@ function openFixedExpenseModal(id = null) {
     document.getElementById('btn-delete-fixed-expense').classList.add('hidden');
     document.getElementById('fixed-expense-modal-title').textContent = 'Nova Despesa Fixa';
     
+    const targetMonth = state.currentFinanceMonth;
+    const monthLabel = targetMonth.split('-').reverse().join('/');
+    const checkboxLabel = document.getElementById('label-fixed-expense-only-current-month');
+    if (checkboxLabel) {
+        checkboxLabel.textContent = `Alterar valor apenas para o mês selecionado (${monthLabel})`;
+    }
+    
+    const onlyCurrentMonthCheckbox = document.getElementById('fixed-expense-only-current-month');
+    if (onlyCurrentMonthCheckbox) {
+        onlyCurrentMonthCheckbox.checked = false; // default to unchecked (global change) for new items
+    }
+    
     if (id) {
         const item = (state.finances.fixedExpenses || []).find(f => f.id === id);
         if (item) {
             document.getElementById('fixed-expense-id').value = item.id;
             document.getElementById('fixed-expense-name').value = item.title;
-            document.getElementById('fixed-expense-amount').value = item.amount;
+            
+            const currentAmount = (item.monthlyAmounts && item.monthlyAmounts[targetMonth] !== undefined)
+                ? item.monthlyAmounts[targetMonth]
+                : item.amount;
+                
+            document.getElementById('fixed-expense-amount').value = currentAmount;
             document.getElementById('fixed-expense-due-day').value = item.dueDay;
             document.getElementById('fixed-expense-desc').value = item.desc || '';
             document.getElementById('fixed-expense-method').value = item.method || 'cash';
             
             if (item.method === 'card') {
                 document.getElementById('fixed-expense-card-id').value = item.cardId || 'default';
+            }
+            
+            if (onlyCurrentMonthCheckbox) {
+                onlyCurrentMonthCheckbox.checked = (item.monthlyAmounts && item.monthlyAmounts[targetMonth] !== undefined);
             }
             
             document.getElementById('btn-delete-fixed-expense').classList.remove('hidden');
@@ -4613,6 +4681,11 @@ function saveFixedExpense(event) {
     const method = document.getElementById('fixed-expense-method').value;
     const cardId = method === 'card' ? document.getElementById('fixed-expense-card-id').value : null;
     
+    const onlyCurrentMonthCheckbox = document.getElementById('fixed-expense-only-current-month');
+    const onlyCurrentMonth = onlyCurrentMonthCheckbox ? onlyCurrentMonthCheckbox.checked : false;
+    
+    const targetMonth = state.currentFinanceMonth;
+    
     if (!title || isNaN(amount) || amount <= 0 || isNaN(dueDay)) {
         alert('Por favor, preencha todos os campos obrigatórios.');
         return;
@@ -4621,24 +4694,49 @@ function saveFixedExpense(event) {
     if (id) {
         const index = state.finances.fixedExpenses.findIndex(f => f.id === id);
         if (index !== -1) {
-            state.finances.fixedExpenses[index] = {
-                ...state.finances.fixedExpenses[index],
-                title, amount, dueDay, desc, method, cardId,
+            const item = state.finances.fixedExpenses[index];
+            if (!item.monthlyAmounts) item.monthlyAmounts = {};
+            
+            // Shallow copy to modify
+            let updatedItem = {
+                ...item,
+                title,
+                dueDay,
+                desc,
+                method,
+                cardId,
                 updatedAt: Date.now()
             };
+            
+            if (onlyCurrentMonth) {
+                updatedItem.monthlyAmounts[targetMonth] = amount;
+            } else {
+                updatedItem.amount = amount;
+                if (updatedItem.monthlyAmounts[targetMonth] !== undefined) {
+                    delete updatedItem.monthlyAmounts[targetMonth];
+                }
+            }
+            
+            state.finances.fixedExpenses[index] = updatedItem;
         }
     } else {
         const newItem = {
             id: 'fx_' + Date.now(),
             title,
-            amount,
+            amount: amount,
             dueDay,
             desc,
             method,
             cardId,
             history: {}, // Mapeia "YYYY-MM" -> boolean
+            monthlyAmounts: {},
             updatedAt: Date.now()
         };
+        
+        if (onlyCurrentMonth) {
+            newItem.monthlyAmounts[targetMonth] = amount;
+        }
+        
         state.finances.fixedExpenses.push(newItem);
     }
     
@@ -5020,7 +5118,10 @@ function renderFinanceDashboard() {
     
     // 4. Despesas Fixas do mês (somar todas as despesas fixas cadastradas)
     const fixedList = state.finances.fixedExpenses || [];
-    const totalFixed = fixedList.reduce((acc, f) => acc + f.amount, 0);
+    const totalFixed = fixedList.reduce((acc, f) => {
+        const val = f.monthlyAmounts && f.monthlyAmounts[targetMonth] !== undefined ? f.monthlyAmounts[targetMonth] : f.amount;
+        return acc + val;
+    }, 0);
     
     // 5. Atualizar KPIs do dashboard
     const incEl = document.getElementById('fin-dash-income');
@@ -5143,7 +5244,8 @@ function renderFinanceChart(cashExpenses, cardExpenses, fixedExpenses) {
     
     // Somar Despesas Fixas (como categoria 'Despesa Fixa' ou 'servico')
     fixedExpenses.forEach(f => {
-        categoryTotals['Despesas Fixas'] = (categoryTotals['Despesas Fixas'] || 0) + f.amount;
+        const val = f.monthlyAmounts && f.monthlyAmounts[state.currentFinanceMonth] !== undefined ? f.monthlyAmounts[state.currentFinanceMonth] : f.amount;
+        categoryTotals['Despesas Fixas'] = (categoryTotals['Despesas Fixas'] || 0) + val;
     });
     
     // Extrair rótulos e valores para o gráfico
@@ -5484,6 +5586,10 @@ function renderFinanceFixed() {
             const isPaid = item.history[targetMonth] === true;
             if (isPaid) paidCount++;
             
+            const currentAmount = (item.monthlyAmounts && item.monthlyAmounts[targetMonth] !== undefined)
+                ? item.monthlyAmounts[targetMonth]
+                : item.amount;
+            
             tr.innerHTML = `
                 <td data-label="Pago" style="padding: 10px; text-align: center;">
                     <input type="checkbox" onchange="toggleFixedExpensePayment('${item.id}', event)" ${isPaid ? 'checked' : ''} style="cursor: pointer; width: 16px; height: 16px;">
@@ -5493,7 +5599,7 @@ function renderFinanceFixed() {
                     ${item.desc ? `<div style="font-size: 0.7rem; color: var(--text-muted); font-weight: normal; font-style: italic;">${item.desc}</div>` : ''}
                 </td>
                 <td data-label="Vence Dia" style="padding: 10px; text-align: center; color: var(--text-muted); font-weight: 600;">Dia ${item.dueDay}</td>
-                <td data-label="Valor" style="padding: 10px; text-align: right; font-weight: 700; color: var(--text-main);">R$ ${item.amount.toFixed(2).replace('.', ',')}</td>
+                <td data-label="Valor" style="padding: 10px; text-align: right; font-weight: 700; color: var(--text-main);">R$ ${currentAmount.toFixed(2).replace('.', ',')}</td>
                 <td data-label="Ação" style="padding: 10px; text-align: center;">
                     <div style="display: flex; gap: 4px; justify-content: center;">
                         <button class="btn-task-action" onclick="openFixedExpenseModal('${item.id}')" title="Editar" style="padding: 4px; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">
@@ -6001,7 +6107,6 @@ function renderCashFlowProjection() {
     
     const cards = state.money.creditCards || [];
     const fixedList = state.money.fixedExpenses || [];
-    const totalFixed = fixedList.reduce((acc, f) => acc + f.amount, 0);
     
     // Projetar para os próximos 3 meses
     for (let i = 1; i <= 3; i++) {
@@ -6017,7 +6122,12 @@ function renderCashFlowProjection() {
             projCardExpenses += invoiceItems.reduce((acc, curr) => acc + curr.installmentAmount, 0);
         });
         
-        const projExpenses = totalFixed + totalExpCash + projCardExpenses;
+        const projFixed = fixedList.reduce((acc, f) => {
+            const val = f.monthlyAmounts && f.monthlyAmounts[projMonthStr] !== undefined ? f.monthlyAmounts[projMonthStr] : f.amount;
+            return acc + val;
+        }, 0);
+        
+        const projExpenses = projFixed + totalExpCash + projCardExpenses;
         const projBalance = projIncome - projExpenses;
         
         const row = document.createElement('tr');
@@ -6489,6 +6599,15 @@ function switchLearnSubTab(tab) {
             mainActionBtn.style.display = 'none';
         }
     }
+    
+    const shareBtn = document.getElementById('btn-learn-share');
+    if (shareBtn) {
+        if (tab === 'disciplines') {
+            shareBtn.style.display = 'inline-flex';
+        } else {
+            shareBtn.style.display = 'none';
+        }
+    }
     safeCreateIcons();
 }
 
@@ -6828,5 +6947,77 @@ function switchTimeFliesSubTab(tab) {
 }
 
 window.switchTimeFliesSubTab = switchTimeFliesSubTab;
+
+function changeCockpitDay(event, day) {
+    if (event) {
+        event.stopPropagation();
+    }
+    state.currentDay = day;
+    renderAll();
+}
+
+window.changeCockpitDay = changeCockpitDay;
+
+function exportProjectsToWhatsApp() {
+    const projects = state.projects || [];
+    if (projects.length === 0) {
+        alert('Nenhum projeto cadastrado para exportar.');
+        return;
+    }
+
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    let text = `📚 *TimeFlies - Relação de Projetos e Disciplinas* 📚\n`;
+    text += `Data: ${dateStr}\n\n`;
+
+    const statusLabels = {
+        andamento: '🟢 EM ANDAMENTO',
+        planejado: '🟡 PLANEJADO',
+        concluido: '🔴 CONCLUÍDO'
+    };
+
+    const typeLabels = {
+        disciplina: 'Disciplina',
+        tcc: 'TCC / Monografia',
+        curso: 'Curso Extra',
+        projeto: 'Projeto'
+    };
+
+    const groups = {
+        andamento: [],
+        planejado: [],
+        concluido: []
+    };
+
+    projects.forEach(p => {
+        if (groups[p.status]) {
+            groups[p.status].push(p);
+        }
+    });
+
+    let hasItems = false;
+    for (const status in groups) {
+        if (groups[status].length > 0) {
+            hasItems = true;
+            text += `*${statusLabels[status]}*\n`;
+            groups[status].forEach(p => {
+                const typeStr = typeLabels[p.type] || p.type;
+                text += `• ${p.name} (${typeStr})\n`;
+            });
+            text += `\n`;
+        }
+    }
+
+    if (!hasItems) {
+        alert('Nenhum projeto para exportar.');
+        return;
+    }
+
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text.trim())}`;
+    window.open(url, '_blank');
+}
+
+window.exportProjectsToWhatsApp = exportProjectsToWhatsApp;
 
 
