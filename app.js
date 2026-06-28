@@ -4904,10 +4904,40 @@ function deleteFixedExpense() {
 
 function deleteFixedExpenseDirect(id, event) {
     if (event) event.stopPropagation();
-    if (confirm('Deseja realmente excluir esta despesa fixa permanentemente de todos os meses?')) {
-        state.finances.fixedExpenses = (state.finances.fixedExpenses || []).filter(f => f.id !== id);
+    const item = (state.finances.fixedExpenses || []).find(f => f.id === id);
+    if (!item) return;
+    
+    const targetMonth = state.currentFinanceMonth;
+    const msg = `Como deseja remover a despesa fixa "${item.title}"?\n\n` +
+                `👉 Clique em [OK] para ENCERRAR/CANCELAR a despesa a partir deste mês (${targetMonth}) em diante (preservando o histórico de valores pagos nos meses anteriores).\n\n` +
+                `👉 Clique em [CANCELAR] se desejar EXCLUIR COMPLETAMENTE a despesa de todos os meses (limpando o histórico passado e futuro).`;
+                
+    if (confirm(msg)) {
+        if (!item.exceptMonths) item.exceptMonths = {};
+        
+        // Adiciona exceção para este mês e futuros
+        const allMonths = getAllFinanceMonths(item);
+        allMonths.forEach(m => {
+            if (m >= targetMonth) {
+                item.exceptMonths[m] = true;
+            }
+        });
+        
+        // Define a data de encerramento no mês anterior
+        const [year, month] = targetMonth.split('-').map(Number);
+        const targetDate = new Date(year, month - 1 - 1, 1);
+        const prevMonth = `${targetDate.getFullYear()}-${(targetDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        item.endDate = prevMonth;
+        item.updatedAt = Date.now();
+        
         saveData();
         renderAll();
+    } else {
+        if (confirm(`Atenção: Isso removerá a despesa "${item.title}" permanentemente de TODOS os meses passados e futuros. Confirmar exclusão total?`)) {
+            state.finances.fixedExpenses = (state.finances.fixedExpenses || []).filter(f => f.id !== id);
+            saveData();
+            renderAll();
+        }
     }
 }
 
