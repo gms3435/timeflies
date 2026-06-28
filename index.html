@@ -820,40 +820,41 @@
                             </button>
                         </div>
                         
-                        <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;" class="finance-dash-grid">
-                                <!-- Hidratação Card -->
-                                <div class="glass-panel water-tracker-card" style="border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); width: 100%;">
-                                    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Consumo de Água (Hoje)</h4>
-                                    <div class="water-cups-row" id="water-cups-container">
+                               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;" class="finance-dash-grid">
+                                <!-- Hidratação Card (Compacto) -->
+                                <div class="glass-panel water-tracker-card" style="border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); width: 100%; padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between; min-height: 120px;">
+                                    <h4 style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); margin: 0 0 2px 0;">Consumo de Água (Hoje)</h4>
+                                    <div class="water-cups-row" id="water-cups-container" style="margin: 4px 0; gap: 5px; min-height: 32px;">
                                         <!-- Renderizado dinamicamente via JS -->
                                     </div>
-                                    <div style="font-size: 1.2rem; font-weight: 850; color: hsl(200, 85%, 45%); margin: 8px 0;" id="water-stat-label">0 / 8 copos</div>
-                                    <div style="display: flex; gap: 8px;">
-                                        <button class="btn-secondary" onclick="adjustWaterCups(-1)">Remover Copo</button>
-                                        <button class="btn-primary" onclick="adjustWaterCups(1)" style="background: hsl(200, 85%, 45%); border-color: hsl(200, 85%, 45%); color: #fff;">Beber Copo</button>
+                                    <div style="font-size: 0.92rem; font-weight: 800; color: hsl(200, 85%, 45%); margin: 2px 0;" id="water-stat-label">0 / 8 copos</div>
+                                    <div style="display: flex; gap: 6px; justify-content: center; width: 100%;">
+                                        <button class="btn-secondary btn-sm" onclick="adjustWaterCups(-1)" style="font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; height: 26px;">- Copo</button>
+                                        <button class="btn-primary btn-sm" onclick="adjustWaterCups(1)" style="background: hsl(200, 85%, 45%); border-color: hsl(200, 85%, 45%); color: #fff; font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; height: 26px;">+ Copo</button>
                                     </div>
                                 </div>
                                 
-                                <!-- Sono & Exercícios Stats -->
-                                <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 12px; width: 100%;">
-                                    <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Atividade & Sono (Médias)</h4>
+                                <!-- Sono & Exercícios Stats (Grid 2x2 Compacto) -->
+                                <div class="glass-panel" style="padding: 10px 14px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 6px; width: 100%; justify-content: space-between; min-height: 120px;">
+                                    <h4 style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); margin: 0 0 2px 0;">Atividade & Sono (Médias)</h4>
                                     
-                                    <div class="cockpit-metric-row">
-                                        <span>Horas de Sono:</span>
-                                        <span id="body-avg-sleep" class="cockpit-metric-value">0.0h</span>
-                                    </div>
-                                    <div class="cockpit-metric-row">
-                                        <span>Qualidade de Sono:</span>
-                                        <span id="body-avg-sleep-quality" class="cockpit-metric-value">N/A</span>
-                                    </div>
-                                    <div class="cockpit-metric-row">
-                                        <span>Tempo de Exercício:</span>
-                                        <span id="body-avg-exercise" class="cockpit-metric-value">0 min</span>
-                                    </div>
-                                    <div class="cockpit-metric-row">
-                                        <span>Último Peso:</span>
-                                        <span id="body-last-weight" class="cockpit-metric-value">0.0 Kg</span>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%;">
+                                        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
+                                            <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Horas Sono</span>
+                                            <span id="body-avg-sleep" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">0.0h</span>
+                                        </div>
+                                        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
+                                            <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Qualidade</span>
+                                            <span id="body-avg-sleep-quality" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); white-space: nowrap;">N/A</span>
+                                        </div>
+                                        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
+                                            <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Exercício</span>
+                                            <span id="body-avg-exercise" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">0 min</span>
+                                        </div>
+                                        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 4px 6px; display: flex; flex-direction: column; gap: 1px;">
+                                            <span style="font-size: 0.62rem; color: var(--text-muted); font-weight: 600;">Último Peso</span>
+                                            <span id="body-last-weight" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">0.0 Kg</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

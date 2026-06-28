@@ -4078,11 +4078,11 @@ textarea.form-control {
     margin: 16px 0;
 }
 .water-cup {
-    width: 32px;
-    height: 42px;
+    width: 24px;
+    height: 32px;
     border: 2px solid var(--text-muted);
     border-top-width: 1px;
-    border-radius: 0 0 6px 6px;
+    border-radius: 0 0 5px 5px;
     cursor: pointer;
     position: relative;
     overflow: hidden;
