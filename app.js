@@ -1020,8 +1020,8 @@ function renderHome() {
     
     if (scoreValEl && scoreCircle && scoreStatusEl && scoreDescEl) {
         scoreValEl.textContent = flyscores.score;
-        // SVG circle radius is 65. Circumference is 2 * Math.PI * 65 ≈ 408.4
-        const circumference = 408.4;
+        // SVG circle radius is 40. Circumference is 2 * Math.PI * 40 ≈ 251.3
+        const circumference = 251.3;
         const offset = circumference - (flyscores.score / 100) * circumference;
         scoreCircle.style.strokeDashoffset = offset;
         

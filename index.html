@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;600;700&display=swap" rel="stylesheet">
 
     <!-- CSS do App -->
-    <link rel="stylesheet" href="style.css?v=15">
+    <link rel="stylesheet" href="style.css?v=16">
 
     <!-- Diagnóstico de Erros JS (inline, sem custo de rede) -->
     <script>
@@ -178,18 +178,18 @@
                         <!-- Painel FlyScore -->
                         <div class="glass-panel flyscore-panel" style="margin: 0; width: 100%;">
                             <div class="title-with-icon" style="justify-content: center; width: 100%;">
-                                <i data-lucide="sparkles" class="text-primary"></i>
-                                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800;">Seu FlyScore</h3>
+                                <i data-lucide="sparkles" class="text-primary" style="width: 16px; height: 16px;"></i>
+                                <h3 style="margin: 0; font-size: 0.95rem; font-weight: 800;">Seu FlyScore</h3>
                             </div>
                             <div class="flyscore-circle-wrapper">
-                                <svg class="flyscore-svg">
-                                    <circle class="flyscore-bg-circle" cx="70" cy="70" r="65"></circle>
-                                    <circle id="home-flyscore-circle" class="flyscore-progress-circle" cx="70" cy="70" r="65"></circle>
+                                <svg class="flyscore-svg" viewBox="0 0 90 90">
+                                    <circle class="flyscore-bg-circle" cx="45" cy="45" r="40"></circle>
+                                    <circle id="home-flyscore-circle" class="flyscore-progress-circle" cx="45" cy="45" r="40"></circle>
                                 </svg>
                                 <span id="home-flyscore-value" class="flyscore-value-text">0</span>
                             </div>
                             <div id="home-flyscore-status" class="flyscore-status text-primary">Calculando...</div>
-                            <p id="home-flyscore-desc" class="flyscore-desc">Suas ações diárias constroem sua pontuação.</p>
+                            <p id="home-flyscore-desc" class="flyscore-desc" style="display: none;">Suas ações diárias constroem sua pontuação.</p>
                         </div>
                         
                         <!-- Painel Lista de Compras (Simplificado) -->
@@ -205,7 +205,7 @@
                             </div>
                         </div>
                         </div>
-                    </div>
+                    <!-- cockpit-grid will be inside home-grid -->
                     
                     <!-- Cockpit de Módulos -->
                     <div class="cockpit-grid">
@@ -2354,7 +2354,7 @@
     <!-- Chart.js: versão pinada + bundle minificado -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
     <!-- App -->
-    <script src="app.js?v=18" defer></script>
+    <script src="app.js?v=19" defer></script>
     <!-- Service Worker: cache offline -->
     <script>
         if ('serviceWorker' in navigator) {
