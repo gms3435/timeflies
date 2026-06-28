@@ -35,9 +35,9 @@ let state = {
         languages: [],
         courses: []
     },
-    esg: { dailyLogs: [], goals: {} },
+    esg: { dailyLogs: [], goals: {}, shoppingList: [], freshFoods: [], foodLogs: [] },
     mind: { dailyLogs: [] },
-    body: { dailyLogs: [] },
+    body: { dailyLogs: [], workouts: [], workoutHistory: [] },
     flyscore: { history: [] }
 };
 
@@ -528,6 +528,13 @@ function unlockAndInitializeApp(password, isFirstCreation = false) {
                     state.core.alarmsActive = parsed.alarmsActive !== false;
                 }
                 
+                // Inicialização das novas estruturas de rotina
+                if (!state.esg.shoppingList) state.esg.shoppingList = [];
+                if (!state.esg.freshFoods) state.esg.freshFoods = [];
+                if (!state.esg.foodLogs) state.esg.foodLogs = [];
+                if (!state.body.workouts || state.body.workouts.length === 0) state.body.workouts = getDefaultWorkouts();
+                if (!state.body.workoutHistory) state.body.workoutHistory = [];
+                
                 // Executa migração
                 migrateFinanceAndProjectData();
                 saveData();
@@ -575,6 +582,13 @@ function unlockAndInitializeApp(password, isFirstCreation = false) {
                 state.learn.projects = savedProjects ? JSON.parse(savedProjects) : [];
             }
             
+            // Inicialização das novas estruturas de rotina
+            if (!state.esg.shoppingList) state.esg.shoppingList = [];
+            if (!state.esg.freshFoods) state.esg.freshFoods = [];
+            if (!state.esg.foodLogs) state.esg.foodLogs = [];
+            if (!state.body.workouts || state.body.workouts.length === 0) state.body.workouts = getDefaultWorkouts();
+            if (!state.body.workoutHistory) state.body.workoutHistory = [];
+
             migrateFinanceAndProjectData();
             saveData();
         }
@@ -1228,6 +1242,9 @@ function renderHome() {
     if (bodyProgressEl) {
         bodyProgressEl.style.width = `${flyscores.body}%`;
     }
+    
+    // Render do widget de alimentos na Home
+    if (typeof renderHomeFreshFoods === 'function') renderHomeFreshFoods();
 }
 
 // CÁLCULO GERAL DE FLYSCORE
@@ -1299,6 +1316,18 @@ function calculateFlyScore() {
         esgScore += (recycledDays * 5);
         esgScore += (plasticsAvoided * 2);
     }
+    
+    // Bônus/Penalidade de Alimentos Consumidos/Desperdiçados nos últimos 7 dias
+    const todayDate = new Date();
+    const sevenDaysAgo = new Date(todayDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const recentFoodLogs = state.esg.foodLogs || [];
+    recentFoodLogs.forEach(fl => {
+        const logDate = new Date(fl.date);
+        if (logDate >= sevenDaysAgo) {
+            if (fl.action === 'consumed') esgScore += 5;
+            if (fl.action === 'wasted') esgScore -= 10;
+        }
+    });
     esgScore = Math.max(0, Math.min(100, esgScore));
     
     // 4. Mind Score - 15%
@@ -1313,7 +1342,8 @@ function calculateFlyScore() {
     // 5. Body Score - 10%
     let bodyScore = 100;
     const bodyLogs = state.body.dailyLogs || [];
-    if (bodyLogs.length > 0) {
+    const hasWorkoutsCompleted = state.body.workouts && state.body.workouts.some(w => w.completedDays && w.completedDays.length > 0);
+    if (bodyLogs.length > 0 || hasWorkoutsCompleted) {
         const lastLogs = bodyLogs.slice(0, 7);
         let waterCupScore = 0;
         let sleepScore = 0;
@@ -1325,9 +1355,25 @@ function calculateFlyScore() {
             exerciseMins += (parseInt(l.exerciseDuration) || 0);
         });
         
-        const avgWater = waterCupScore / lastLogs.length;
-        const avgSleep = sleepScore / lastLogs.length;
-        const avgExercise = Math.min(100, (exerciseMins / 150) * 100); // 150 minutes goal
+        // Contar treinos concluídos nos últimos 7 dias e adicionar 45 minutos para cada um
+        const sevenDaysAgoStr = new Date(todayDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
+        let completedWorkoutsMins = 0;
+        if (state.body.workouts) {
+            state.body.workouts.forEach(w => {
+                if (w.completedDays) {
+                    w.completedDays.forEach(d => {
+                        if (d >= sevenDaysAgoStr) {
+                            completedWorkoutsMins += 45; // 45 minutos por treino
+                        }
+                    });
+                }
+            });
+        }
+        exerciseMins += completedWorkoutsMins;
+        
+        const avgWater = lastLogs.length > 0 ? (waterCupScore / lastLogs.length) : 50;
+        const avgSleep = lastLogs.length > 0 ? (sleepScore / lastLogs.length) : 60;
+        const avgExercise = Math.min(100, (exerciseMins / 150) * 100); // Meta de 150 mins
         
         bodyScore = (avgWater * 0.3) + (avgSleep * 0.3) + (avgExercise * 0.4);
     }
@@ -6268,6 +6314,10 @@ function renderEsg() {
         `;
         tbody.appendChild(row);
     });
+    
+    // Render novas abas/widgets da lista de compras e validade
+    if (typeof renderShoppingList === 'function') renderShoppingList();
+    if (typeof renderFreshFoods === 'function') renderFreshFoods();
 }
 
 // ============================================================
@@ -6559,6 +6609,9 @@ function renderBody() {
         `;
         tbody.appendChild(row);
     });
+    
+    // Render do painel de treinos
+    if (typeof renderBodyWorkouts === 'function') renderBodyWorkouts();
 }
 
 // ============================================================
@@ -7017,6 +7070,769 @@ function exportProjectsToWhatsApp() {
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text.trim())}`;
     window.open(url, '_blank');
 }
+
+// ============================================================
+// LOGICA DE NOVAS FUNCOES DE ROTINA (TREINO, SHOPPING, VALIDADE)
+// ============================================================
+
+// 1. Seed de Treinos Padrão
+function getDefaultWorkouts() {
+    return [
+        {
+            id: 'A',
+            name: 'Costas',
+            day: 'Segunda',
+            completedDays: [],
+            exercises: [
+                { name: 'Puxada Alta', sets: 3, reps: 8, weight: 15, completed: false },
+                { name: 'Remada Baixa', sets: 3, reps: 8, weight: 20, completed: false },
+                { name: 'Pull Down', sets: 3, reps: 8, weight: 8, completed: false }
+            ]
+        },
+        {
+            id: 'B',
+            name: 'Membros Superiores',
+            day: 'Quarta',
+            completedDays: [],
+            exercises: [
+                { name: 'Supino Reto', sets: 3, reps: 10, weight: 30, completed: false },
+                { name: 'Desenvolvimento Ombros', sets: 3, reps: 10, weight: 10, completed: false },
+                { name: 'Rosca Direta', sets: 3, reps: 10, weight: 12, completed: false },
+                { name: 'Tríceps Pulley', sets: 3, reps: 10, weight: 15, completed: false }
+            ]
+        },
+        {
+            id: 'C',
+            name: 'Membros Inferiores',
+            day: 'Sexta',
+            completedDays: [],
+            exercises: [
+                { name: 'Agachamento Livre', sets: 3, reps: 7, weight: 40, completed: false },
+                { name: 'Leg Press 45', sets: 3, reps: 7, weight: 80, completed: false },
+                { name: 'Cadeira Extensora', sets: 3, reps: 7, weight: 25, completed: false },
+                { name: 'Cadeira Flexora', sets: 3, reps: 7, weight: 20, completed: false }
+            ]
+        }
+    ];
+}
+
+// 2. Lista de Compras Inteligente
+function renderShoppingList() {
+    const listContainer = document.getElementById('esg-shopping-list');
+    if (!listContainer) return;
+    
+    const items = state.esg.shoppingList || [];
+    listContainer.innerHTML = '';
+    
+    if (items.length === 0) {
+        listContainer.innerHTML = `<div style="text-align: center; font-size: 0.75rem; color: var(--text-muted); padding: 12px;">Nenhum item na lista de compras.</div>`;
+        return;
+    }
+    
+    // Group by category
+    const categories = ['Hortifrúti', 'Frios/Proteínas', 'Mercearia', 'Outros'];
+    categories.forEach(cat => {
+        const catItems = items.filter(i => i.category === cat);
+        if (catItems.length === 0) return;
+        
+        const catHeader = document.createElement('div');
+        catHeader.style.cssText = 'font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin: 6px 0 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 2px;';
+        catHeader.textContent = cat;
+        listContainer.appendChild(catHeader);
+        
+        catItems.forEach(item => {
+            const card = document.createElement('div');
+            card.className = `shopping-item-card ${item.checked ? 'checked' : ''}`;
+            
+            let actionBtn = '';
+            if (item.checked) {
+                // If checked, show the button to send to Expiration Control
+                actionBtn = `<button type="button" class="btn-icon" onclick="openEsgFoodModal('${item.name}')" title="Mandar para Validade" style="background: rgba(245,158,11,0.15); color: #f59e0b; padding: 4px; border-radius: 4px; border: none; display: flex; align-items: center;"><i data-lucide="calendar-plus" style="width: 13px; height: 13px;"></i></button>`;
+            }
+            
+            card.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+                    <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShoppingItem('${item.id}')" style="cursor: pointer; width: 15px; height: 15px; accent-color: hsl(142, 60%, 45%);">
+                    <span class="shopping-item-text" style="font-size: 0.8rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</span>
+                </div>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                    ${actionBtn}
+                    <button type="button" class="btn-icon text-danger" onclick="deleteShoppingItem('${item.id}')" style="background: transparent; border: none; cursor: pointer; padding: 2px;"><i data-lucide="trash-2" style="width: 13px; height: 13px;"></i></button>
+                </div>
+            `;
+            listContainer.appendChild(card);
+        });
+    });
+    
+    safeCreateIcons();
+}
+
+function addShoppingItem(event) {
+    event.preventDefault();
+    const input = document.getElementById('shopping-item-name');
+    const select = document.getElementById('shopping-item-category');
+    if (!input) return;
+    
+    const name = input.value.trim();
+    const category = select.value;
+    if (!name) return;
+    
+    const newItem = {
+        id: 'shop_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        name: name,
+        category: category,
+        checked: false
+    };
+    
+    if (!state.esg.shoppingList) state.esg.shoppingList = [];
+    state.esg.shoppingList.push(newItem);
+    
+    input.value = '';
+    saveData();
+    renderShoppingList();
+}
+
+function toggleShoppingItem(id) {
+    const item = state.esg.shoppingList.find(i => i.id === id);
+    if (item) {
+        item.checked = !item.checked;
+        saveData();
+        renderShoppingList();
+    }
+}
+
+function deleteShoppingItem(id) {
+    state.esg.shoppingList = state.esg.shoppingList.filter(i => i.id !== id);
+    saveData();
+    renderShoppingList();
+}
+
+function clearCheckedShoppingItems() {
+    state.esg.shoppingList = (state.esg.shoppingList || []).filter(i => !i.checked);
+    saveData();
+    renderShoppingList();
+}
+
+// 3. Controle de Validade / Desperdício Zero (ESG)
+function renderFreshFoods() {
+    const listContainer = document.getElementById('esg-food-list');
+    if (!listContainer) return;
+    
+    const items = state.esg.freshFoods || [];
+    listContainer.innerHTML = '';
+    
+    if (items.length === 0) {
+        listContainer.innerHTML = `<div style="text-align: center; font-size: 0.75rem; color: var(--text-muted); padding: 12px;">Nenhum alimento cadastrado na validade.</div>`;
+        return;
+    }
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    // Sort by expiration date (closest first)
+    items.sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+    
+    items.forEach(item => {
+        const expiry = new Date(item.expiryDate);
+        expiry.setHours(0,0,0,0);
+        
+        const diffTime = expiry - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        let badgeClass = 'success';
+        let badgeText = `${diffDays}d restantes`;
+        
+        if (diffDays <= 1) {
+            badgeClass = 'danger';
+            badgeText = diffDays < 0 ? 'Vencido!' : (diffDays === 0 ? 'Vence Hoje!' : 'Vence Amanhã!');
+        } else if (diffDays <= 3) {
+            badgeClass = 'warning';
+            badgeText = `${diffDays}d restantes`;
+        }
+        
+        const card = document.createElement('div');
+        card.className = 'food-item-card';
+        card.innerHTML = `
+            <div style="display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</span>
+                <span style="font-size: 0.68rem; color: var(--text-muted);">Qtd: ${item.qty} • Vence em: ${expiry.toLocaleDateString('pt-BR')}</span>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <span class="expiry-badge ${badgeClass}">${badgeText}</span>
+                <button type="button" class="btn-icon text-success" onclick="consumeFreshFood('${item.id}')" title="Consumido" style="background: rgba(16,185,129,0.1); border: none; cursor: pointer; padding: 4px; border-radius: 4px;"><i data-lucide="check" style="width: 14px; height: 14px;"></i></button>
+                <button type="button" class="btn-icon text-danger" onclick="wasteFreshFood('${item.id}')" title="Desperdiçado (Lixo)" style="background: rgba(239,68,68,0.1); border: none; cursor: pointer; padding: 4px; border-radius: 4px;"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
+            </div>
+        `;
+        listContainer.appendChild(card);
+    });
+    
+    safeCreateIcons();
+}
+
+function openEsgFoodModal(prefilledName = '') {
+    const modal = document.getElementById('modal-esg-food');
+    if (!modal) return;
+    
+    modal.classList.add('active');
+    document.getElementById('esg-food-form').reset();
+    
+    if (prefilledName) {
+        document.getElementById('esg-food-name').value = prefilledName;
+        document.getElementById('esg-food-days').value = '5'; // default validade
+        document.getElementById('esg-food-qty').value = '1 un';
+    }
+}
+
+function closeEsgFoodModal() {
+    const modal = document.getElementById('modal-esg-food');
+    if (modal) modal.classList.remove('active');
+}
+
+function saveEsgFood(event) {
+    event.preventDefault();
+    const name = document.getElementById('esg-food-name').value.trim();
+    const qty = document.getElementById('esg-food-qty').value.trim();
+    const days = parseInt(document.getElementById('esg-food-days').value) || 3;
+    
+    if (!name || !qty) return;
+    
+    const today = new Date();
+    const expiry = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
+    
+    const newItem = {
+        id: 'food_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        name: name,
+        qty: qty,
+        addedDate: today.toISOString().substring(0, 10),
+        expiryDate: expiry.toISOString().substring(0, 10)
+    };
+    
+    if (!state.esg.freshFoods) state.esg.freshFoods = [];
+    state.esg.freshFoods.push(newItem);
+    
+    saveData();
+    closeEsgFoodModal();
+    renderEsg();
+    renderHome(); // Updates the widget on home
+}
+
+function consumeFreshFood(id) {
+    const item = state.esg.freshFoods.find(i => i.id === id);
+    if (item) {
+        // Log action to state
+        if (!state.esg.foodLogs) state.esg.foodLogs = [];
+        state.esg.foodLogs.push({
+            id: 'log_' + Date.now(),
+            date: new Date().toISOString().substring(0, 10),
+            name: item.name,
+            action: 'consumed'
+        });
+        
+        // Remove from list
+        state.esg.freshFoods = state.esg.freshFoods.filter(i => i.id !== id);
+        
+        saveData();
+        renderEsg();
+        renderHome();
+        alert(`Você consumiu ${item.name} a tempo! +10 pontos no seu FlyScore por evitar o desperdício! 🎉`);
+    }
+}
+
+function wasteFreshFood(id) {
+    const item = state.esg.freshFoods.find(i => i.id === id);
+    if (item) {
+        if (confirm(`Confirmar descarte/desperdício de ${item.name}? Isso impactará seu FlyScore.`)) {
+            // Log action to state
+            if (!state.esg.foodLogs) state.esg.foodLogs = [];
+            state.esg.foodLogs.push({
+                id: 'log_' + Date.now(),
+                date: new Date().toISOString().substring(0, 10),
+                name: item.name,
+                action: 'wasted'
+            });
+            
+            // Remove from list
+            state.esg.freshFoods = state.esg.freshFoods.filter(i => i.id !== id);
+            
+            saveData();
+            renderEsg();
+            renderHome();
+        }
+    }
+}
+
+// 4. Widget da Home: Frutas Disponíveis
+function renderHomeFreshFoods() {
+    const homeList = document.getElementById('home-fresh-foods-list');
+    if (!homeList) return;
+    
+    const items = state.esg.freshFoods || [];
+    homeList.innerHTML = '';
+    
+    if (items.length === 0) {
+        homeList.innerHTML = `<div style="text-align: center; font-size: 0.72rem; color: var(--text-muted); padding: 8px;">Nenhum alimento na despensa de validade.</div>`;
+        return;
+    }
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    // Sort by expiration (closest first)
+    const sorted = [...items].sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+    
+    // Show top 4
+    sorted.slice(0, 4).forEach(item => {
+        const expiry = new Date(item.expiryDate);
+        expiry.setHours(0,0,0,0);
+        
+        const diffTime = expiry - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        let color = '#10b981'; // Green
+        let status = `${diffDays} dias`;
+        
+        if (diffDays <= 1) {
+            color = '#ef4444'; // Red
+            status = diffDays < 0 ? 'Vencido' : (diffDays === 0 ? 'Hoje' : 'Amanhã');
+        } else if (diffDays <= 3) {
+            color = '#f59e0b'; // Yellow
+        }
+        
+        const div = document.createElement('div');
+        div.style.cssText = 'background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;';
+        div.innerHTML = `
+            <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
+                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</span>
+                <span style="font-size: 0.65rem; color: var(--text-muted);">${item.qty} • vence: ${expiry.toLocaleDateString('pt-BR')}</span>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <span style="font-size: 0.65rem; font-weight: 700; color: ${color}; background: ${color}1a; padding: 2px 6px; border-radius: 4px; border: 1px solid ${color}33;">${status}</span>
+                <button type="button" class="btn-icon text-success" onclick="consumeFreshFood('${item.id}')" title="Marcar como Consumido" style="background: transparent; border: none; cursor: pointer; padding: 2px; display: flex; align-items: center;"><i data-lucide="check" style="width: 14px; height: 14px;"></i></button>
+            </div>
+        `;
+        homeList.appendChild(div);
+    });
+    
+    safeCreateIcons();
+}
+
+// 5. Ficha de Academia e Frequência (Body)
+function getDatesOfCurrentWeek() {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0: Dom, 1: Seg...
+    // Queremos Segunda-feira como primeiro dia, Domingo como último
+    const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+    const monday = new Date(today.getTime() + distanceToMonday * 24 * 60 * 60 * 1000);
+    
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(monday.getTime() + i * 24 * 60 * 60 * 1000);
+        weekDates.push(d.toISOString().substring(0, 10));
+    }
+    return weekDates;
+}
+
+function renderBodyWorkouts() {
+    const tabsContainer = document.getElementById('workout-tabs-container');
+    const contentContainer = document.getElementById('workout-active-content');
+    const dayLabel = document.getElementById('workout-recommended-day');
+    const chipsContainer = document.getElementById('workout-frequency-chips');
+    
+    if (!tabsContainer || !contentContainer) return;
+    
+    const workouts = state.body.workouts || [];
+    
+    // Garante que haja um treino ativo selecionado
+    if (!state.body.activeWorkoutId && workouts.length > 0) {
+        state.body.activeWorkoutId = workouts[0].id;
+    }
+    
+    // 1. Renderizar Abas de Seleção
+    tabsContainer.innerHTML = '';
+    workouts.forEach(w => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `workout-tab-btn ${state.body.activeWorkoutId === w.id ? 'active' : ''}`;
+        btn.textContent = `Treino ${w.id} - ${w.name}`;
+        btn.onclick = () => selectWorkoutTab(w.id);
+        tabsContainer.appendChild(btn);
+    });
+    
+    const activeWorkout = workouts.find(w => w.id === state.body.activeWorkoutId);
+    
+    if (!activeWorkout) {
+        contentContainer.innerHTML = `<div style="text-align: center; font-size: 0.8rem; color: var(--text-muted); padding: 20px;">Nenhum treino selecionado. Crie um novo treino acima!</div>`;
+        if (dayLabel) dayLabel.textContent = '';
+        if (chipsContainer) chipsContainer.innerHTML = '';
+        return;
+    }
+    
+    // 2. Renderizar Detalhes e Recomendações
+    if (dayLabel) {
+        dayLabel.textContent = `Dia Recomendado: ${activeWorkout.day || 'Não definido'}`;
+    }
+    
+    // 3. Renderizar Chips de Frequência Semanal (Seg a Dom)
+    if (chipsContainer) {
+        chipsContainer.innerHTML = '';
+        const weekDates = getDatesOfCurrentWeek();
+        const dayLetters = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+        
+        weekDates.forEach((dateStr, idx) => {
+            const chip = document.createElement('div');
+            chip.className = 'workout-day-chip';
+            chip.textContent = dayLetters[idx];
+            
+            // Verifica se QUALQUER treino foi concluído nesta data
+            const wasTrained = workouts.some(w => w.completedDays && w.completedDays.includes(dateStr));
+            if (wasTrained) {
+                chip.classList.add('active');
+                chip.title = 'Você treinou neste dia! 💪';
+            } else {
+                chip.title = 'Sem registro de treino';
+            }
+            chipsContainer.appendChild(chip);
+        });
+    }
+    
+    // 4. Renderizar Exercícios do Treino Ativo
+    contentContainer.innerHTML = '';
+    const exercises = activeWorkout.exercises || [];
+    
+    if (exercises.length === 0) {
+        contentContainer.innerHTML = `
+            <div style="text-align: center; font-size: 0.8rem; color: var(--text-muted); padding: 16px;">
+                Nenhum exercício neste treino.
+                <button type="button" class="btn-accent btn-sm" onclick="openExerciseModal('${activeWorkout.id}')" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 0.72rem; border-radius: 4px;"><i data-lucide="plus" style="width: 12px; height: 12px;"></i> Adicionar Exercício</button>
+            </div>
+        `;
+        safeCreateIcons();
+        return;
+    }
+    
+    exercises.forEach((ex, idx) => {
+        const card = document.createElement('div');
+        card.className = `exercise-row-card ${ex.completed ? 'completed' : ''}`;
+        
+        card.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                <input type="checkbox" ${ex.completed ? 'checked' : ''} onchange="toggleExerciseCompletion('${activeWorkout.id}', ${idx})" style="cursor: pointer; width: 16px; height: 16px; accent-color: hsl(0, 80%, 55%);">
+                <div style="display: flex; flex-direction: column; min-width: 0;">
+                    <span class="exercise-info-name" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${ex.name}</span>
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">${ex.sets} séries de ${ex.reps} repetições</span>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--text-muted);">
+                    <input type="number" value="${ex.weight}" onchange="updateExerciseWeight('${activeWorkout.id}', ${idx}, this.value)" style="width: 44px; height: 26px; font-size: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); color: #fff; padding: 2px 4px; border-radius: 4px; text-align: center;" min="0">
+                    <span>Kg</span>
+                </div>
+                <button type="button" onclick="startWorkoutRestTimer()" class="btn-icon" title="Iniciar Descanso (60s)" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 5px; border-radius: 4px; color: var(--text-muted);"><i data-lucide="timer" style="width: 13px; height: 13px;"></i></button>
+                <button type="button" class="btn-icon" onclick="openExerciseModal('${activeWorkout.id}', ${idx})" style="background: transparent; border: none; cursor: pointer; padding: 2px; color: var(--text-muted);"><i data-lucide="edit-3" style="width: 13px; height: 13px;"></i></button>
+            </div>
+        `;
+        contentContainer.appendChild(card);
+    });
+    
+    // Barra de Ação do Treino
+    const actionsRow = document.createElement('div');
+    actionsRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-top: 6px; gap: 8px;';
+    
+    // Check se todos concluídos
+    const allDone = exercises.every(e => e.completed);
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const alreadyCompletedToday = activeWorkout.completedDays && activeWorkout.completedDays.includes(todayStr);
+    
+    let completeBtnText = alreadyCompletedToday ? 'Concluído Hoje! ✓' : 'Concluir Treino';
+    let completeBtnStyle = alreadyCompletedToday 
+        ? 'background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; font-weight: 700;' 
+        : 'background: hsl(0, 80%, 55%); border: 1px solid hsl(0, 80%, 55%); color: #fff; font-weight: 700;';
+        
+    actionsRow.innerHTML = `
+        <button type="button" class="btn-secondary" onclick="openExerciseModal('${activeWorkout.id}')" style="font-size: 0.72rem; padding: 6px 12px; display: flex; align-items: center; gap: 4px; border-radius: 6px;"><i data-lucide="plus" style="width: 13px; height: 13px;"></i> Add Exercício</button>
+        <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn-danger btn-sm" onclick="deleteWorkout('${activeWorkout.id}')" style="font-size: 0.72rem; padding: 6px 10px; border-radius: 6px; background: transparent; border: 1px solid var(--danger); color: var(--danger);">Excluir Treino</button>
+            <button type="button" class="btn-primary" onclick="completeWorkout('${activeWorkout.id}')" style="font-size: 0.75rem; padding: 6px 14px; border-radius: 6px; ${completeBtnStyle}" ${alreadyCompletedToday ? 'disabled' : ''}>${completeBtnText}</button>
+        </div>
+    `;
+    contentContainer.appendChild(actionsRow);
+    
+    safeCreateIcons();
+}
+
+function selectWorkoutTab(id) {
+    state.body.activeWorkoutId = id;
+    renderBodyWorkouts();
+}
+
+function updateExerciseWeight(workoutId, idx, val) {
+    const workouts = state.body.workouts || [];
+    const workout = workouts.find(w => w.id === workoutId);
+    if (workout && workout.exercises[idx]) {
+        workout.exercises[idx].weight = parseFloat(val) || 0;
+        saveData();
+    }
+}
+
+function toggleExerciseCompletion(workoutId, idx) {
+    const workouts = state.body.workouts || [];
+    const workout = workouts.find(w => w.id === workoutId);
+    if (workout && workout.exercises[idx]) {
+        workout.exercises[idx].completed = !workout.exercises[idx].completed;
+        saveData();
+        renderBodyWorkouts();
+        
+        // Se concluiu todas e ainda não foi marcado hoje, sugere finalizar
+        const allDone = workout.exercises.every(e => e.completed);
+        const todayStr = new Date().toISOString().substring(0, 10);
+        const alreadyCompletedToday = workout.completedDays && workout.completedDays.includes(todayStr);
+        if (allDone && !alreadyCompletedToday) {
+            setTimeout(() => {
+                if (confirm(`Parabéns! Todos os exercícios do Treino ${workout.id} foram concluídos. Deseja finalizar o treino e registrar a frequência hoje?`)) {
+                    completeWorkout(workoutId);
+                }
+            }, 150);
+        }
+    }
+}
+
+function completeWorkout(workoutId) {
+    const workouts = state.body.workouts || [];
+    const workout = workouts.find(w => w.id === workoutId);
+    if (workout) {
+        const todayStr = new Date().toISOString().substring(0, 10);
+        if (!workout.completedDays) workout.completedDays = [];
+        
+        if (!workout.completedDays.includes(todayStr)) {
+            workout.completedDays.push(todayStr);
+            // Marcar todos os exercícios como concluídos para consistência visual
+            workout.exercises.forEach(ex => ex.completed = true);
+            
+            saveData();
+            renderBody();
+            renderHome();
+            alert(`Treino ${workout.id} concluído com sucesso! Registro de frequência atualizado na sua ficha. +15 pontos de treino no FlyScore! 💪🚀`);
+        }
+    }
+}
+
+// 5.1. Modais de Fichas e Treinos
+function openWorkoutModal() {
+    const modal = document.getElementById('modal-body-workout');
+    if (modal) modal.classList.add('active');
+}
+
+function closeWorkoutModal() {
+    const modal = document.getElementById('modal-body-workout');
+    if (modal) modal.classList.remove('active');
+}
+
+function saveWorkout(event) {
+    event.preventDefault();
+    const letter = document.getElementById('workout-letter').value.trim().toUpperCase();
+    const name = document.getElementById('workout-name').value.trim();
+    const day = document.getElementById('workout-day').value;
+    
+    if (!letter || !name) return;
+    
+    if (!state.body.workouts) state.body.workouts = [];
+    
+    // Check duplication
+    if (state.body.workouts.some(w => w.id === letter)) {
+        alert(`O treino com o identificador '${letter}' já existe.`);
+        return;
+    }
+    
+    const newWorkout = {
+        id: letter,
+        name: name,
+        day: day,
+        completedDays: [],
+        exercises: []
+    };
+    
+    state.body.workouts.push(newWorkout);
+    state.body.activeWorkoutId = letter;
+    
+    saveData();
+    closeWorkoutModal();
+    renderBodyWorkouts();
+}
+
+function deleteWorkout(id) {
+    if (confirm(`Aviso: Isso irá excluir o Treino ${id} permanentemente. Deseja continuar?`)) {
+        state.body.workouts = state.body.workouts.filter(w => w.id !== id);
+        if (state.body.workouts.length > 0) {
+            state.body.activeWorkoutId = state.body.workouts[0].id;
+        } else {
+            state.body.activeWorkoutId = '';
+        }
+        saveData();
+        renderBodyWorkouts();
+    }
+}
+
+// 5.2. Modais de Exercícios
+function openExerciseModal(workoutId, idx = null) {
+    const modal = document.getElementById('modal-body-exercise');
+    if (!modal) return;
+    
+    modal.classList.add('active');
+    document.getElementById('body-exercise-form').reset();
+    
+    document.getElementById('exercise-workout-id').value = workoutId;
+    document.getElementById('exercise-index').value = idx !== null ? idx : '';
+    
+    const deleteBtn = document.getElementById('btn-delete-exercise');
+    const title = document.getElementById('exercise-modal-title');
+    
+    if (idx !== null) {
+        // Edit Mode
+        title.textContent = 'Editar Exercício';
+        if (deleteBtn) deleteBtn.classList.remove('hidden');
+        
+        const workout = state.body.workouts.find(w => w.id === workoutId);
+        const ex = workout.exercises[idx];
+        
+        document.getElementById('exercise-name').value = ex.name;
+        document.getElementById('exercise-sets').value = ex.sets;
+        document.getElementById('exercise-reps').value = ex.reps;
+        document.getElementById('exercise-weight').value = ex.weight;
+    } else {
+        // Add Mode
+        title.textContent = 'Adicionar Exercício';
+        if (deleteBtn) deleteBtn.classList.add('hidden');
+    }
+}
+
+function closeExerciseModal() {
+    const modal = document.getElementById('modal-body-exercise');
+    if (modal) modal.classList.remove('active');
+}
+
+function saveExercise(event) {
+    event.preventDefault();
+    const workoutId = document.getElementById('exercise-workout-id').value;
+    const indexStr = document.getElementById('exercise-index').value;
+    
+    const name = document.getElementById('exercise-name').value.trim();
+    const sets = parseInt(document.getElementById('exercise-sets').value) || 3;
+    const reps = parseInt(document.getElementById('exercise-reps').value) || 10;
+    const weight = parseFloat(document.getElementById('exercise-weight').value) || 0;
+    
+    if (!name) return;
+    
+    const workout = state.body.workouts.find(w => w.id === workoutId);
+    if (!workout) return;
+    
+    const exObj = { name, sets, reps, weight, completed: false };
+    
+    if (indexStr !== '') {
+        // Edit existing
+        const idx = parseInt(indexStr);
+        const oldComp = workout.exercises[idx].completed;
+        exObj.completed = oldComp; // keep completion state
+        workout.exercises[idx] = exObj;
+    } else {
+        // Add new
+        workout.exercises.push(exObj);
+    }
+    
+    saveData();
+    closeExerciseModal();
+    renderBodyWorkouts();
+}
+
+function deleteExercise() {
+    const workoutId = document.getElementById('exercise-workout-id').value;
+    const indexStr = document.getElementById('exercise-index').value;
+    
+    if (indexStr === '') return;
+    
+    if (confirm('Deseja excluir este exercício?')) {
+        const workout = state.body.workouts.find(w => w.id === workoutId);
+        if (workout) {
+            const idx = parseInt(indexStr);
+            workout.exercises.splice(idx, 1);
+            saveData();
+            closeExerciseModal();
+            renderBodyWorkouts();
+        }
+    }
+}
+
+// 6. Timer de Descanso de Academia (Visual, Sem Som)
+let workoutRestIntervalId = null;
+let workoutRestTimeRemaining = 0;
+
+function startWorkoutRestTimer() {
+    // Para cronômetro anterior se estiver ativo
+    stopWorkoutRestTimer();
+    
+    const restTimerEl = document.getElementById('workout-rest-timer');
+    const secondsDisplay = document.getElementById('rest-seconds-display');
+    
+    if (!restTimerEl || !secondsDisplay) return;
+    
+    workoutRestTimeRemaining = 60; // 60 segundos padrão de descanso
+    secondsDisplay.textContent = `${workoutRestTimeRemaining}s`;
+    restTimerEl.classList.remove('hidden');
+    
+    workoutRestIntervalId = setInterval(() => {
+        if (workoutRestTimeRemaining > 1) {
+            workoutRestTimeRemaining--;
+            secondsDisplay.textContent = `${workoutRestTimeRemaining}s`;
+        } else {
+            // Tempo esgotado
+            stopWorkoutRestTimer();
+            // Alerta visual discreto piscando a tela do temporizador
+            const flashTimer = document.createElement('div');
+            flashTimer.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;padding:12px 24px;border-radius:8px;font-weight:bold;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);animation:pulse 1s infinite;';
+            flashTimer.innerHTML = '⏱️ Fim do Descanso! Hora de treinar!';
+            document.body.appendChild(flashTimer);
+            
+            setTimeout(() => {
+                flashTimer.remove();
+            }, 3000);
+        }
+    }, 1000);
+}
+
+function stopWorkoutRestTimer() {
+    if (workoutRestIntervalId) {
+        clearInterval(workoutRestIntervalId);
+        workoutRestIntervalId = null;
+    }
+    const restTimerEl = document.getElementById('workout-rest-timer');
+    if (restTimerEl) {
+        restTimerEl.classList.add('hidden');
+    }
+}
+
+// Exportar funções novas no escopo window
+window.addShoppingItem = addShoppingItem;
+window.toggleShoppingItem = toggleShoppingItem;
+window.deleteShoppingItem = deleteShoppingItem;
+window.clearCheckedShoppingItems = clearCheckedShoppingItems;
+window.openEsgFoodModal = openEsgFoodModal;
+window.closeEsgFoodModal = closeEsgFoodModal;
+window.saveEsgFood = saveEsgFood;
+window.consumeFreshFood = consumeFreshFood;
+window.wasteFreshFood = wasteFreshFood;
+window.openWorkoutModal = openWorkoutModal;
+window.closeWorkoutModal = closeWorkoutModal;
+window.saveWorkout = saveWorkout;
+window.deleteWorkout = deleteWorkout;
+window.openExerciseModal = openExerciseModal;
+window.closeExerciseModal = closeExerciseModal;
+window.saveExercise = saveExercise;
+window.deleteExercise = deleteExercise;
+window.selectWorkoutTab = selectWorkoutTab;
+window.updateExerciseWeight = updateExerciseWeight;
+window.toggleExerciseCompletion = toggleExerciseCompletion;
+window.completeWorkout = completeWorkout;
+window.startWorkoutRestTimer = startWorkoutRestTimer;
+window.stopWorkoutRestTimer = stopWorkoutRestTimer;
 
 window.exportProjectsToWhatsApp = exportProjectsToWhatsApp;
 

@@ -180,21 +180,35 @@
                 </section>
                 
                 <section class="home-grid">
-                    <!-- Painel FlyScore -->
-                    <div class="glass-panel flyscore-panel">
-                        <div class="title-with-icon" style="justify-content: center; width: 100%;">
-                            <i data-lucide="sparkles" class="text-primary"></i>
-                            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800;">Seu FlyScore</h3>
+                    <div style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
+                        <!-- Painel FlyScore -->
+                        <div class="glass-panel flyscore-panel" style="margin: 0; width: 100%;">
+                            <div class="title-with-icon" style="justify-content: center; width: 100%;">
+                                <i data-lucide="sparkles" class="text-primary"></i>
+                                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800;">Seu FlyScore</h3>
+                            </div>
+                            <div class="flyscore-circle-wrapper">
+                                <svg class="flyscore-svg">
+                                    <circle class="flyscore-bg-circle" cx="70" cy="70" r="65"></circle>
+                                    <circle id="home-flyscore-circle" class="flyscore-progress-circle" cx="70" cy="70" r="65"></circle>
+                                </svg>
+                                <span id="home-flyscore-value" class="flyscore-value-text">0</span>
+                            </div>
+                            <div id="home-flyscore-status" class="flyscore-status text-primary">Calculando...</div>
+                            <p id="home-flyscore-desc" class="flyscore-desc">Suas ações diárias constroem sua pontuação.</p>
                         </div>
-                        <div class="flyscore-circle-wrapper">
-                            <svg class="flyscore-svg">
-                                <circle class="flyscore-bg-circle" cx="70" cy="70" r="65"></circle>
-                                <circle id="home-flyscore-circle" class="flyscore-progress-circle" cx="70" cy="70" r="65"></circle>
-                            </svg>
-                            <span id="home-flyscore-value" class="flyscore-value-text">0</span>
+                        
+                        <!-- Painel Frutas Disponíveis -->
+                        <div class="glass-panel" id="home-fresh-foods-panel" style="padding: 16px; display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                            <div class="title-with-icon" style="justify-content: flex-start; width: 100%;">
+                                <i data-lucide="apple" style="color: hsl(142, 60%, 45%);"></i>
+                                <h3 style="margin: 0; font-size: 1rem; font-weight: 800;">Alimentos Disponíveis</h3>
+                            </div>
+                            <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Consuma alimentos antes do vencimento para evitar desperdício!</p>
+                            <div id="home-fresh-foods-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 4px;">
+                                <!-- Inserido via JS -->
+                            </div>
                         </div>
-                        <div id="home-flyscore-status" class="flyscore-status text-primary">Calculando...</div>
-                        <p id="home-flyscore-desc" class="flyscore-desc">Suas ações diárias constroem sua pontuação.</p>
                     </div>
                     
                     <!-- Cockpit de Módulos -->
@@ -683,6 +697,47 @@
                                 </div>
                             </div>
                             
+                            <!-- Lista de Compras & Desperdício Zero -->
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;" class="finance-dash-grid">
+                                <!-- Lista de Compras -->
+                                <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                                    <div class="panel-header space-between" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); margin: 0; align-items: center;">
+                                        <div class="title-with-icon">
+                                            <i data-lucide="shopping-cart" style="color: hsl(142, 60%, 45%);"></i>
+                                            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin: 0;">Lista de Compras</h4>
+                                        </div>
+                                        <button class="btn-secondary btn-sm" onclick="clearCheckedShoppingItems()" style="padding: 4px 8px; font-size: 0.7rem; border-radius: 4px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">Limpar Comprados</button>
+                                    </div>
+                                    <form id="esg-shopping-form" onsubmit="addShoppingItem(event)" style="display: flex; gap: 8px; margin: 0;">
+                                        <input type="text" id="shopping-item-name" class="form-control" placeholder="Item (Ex: Banana, Ovos...)" required style="flex: 1; font-size: 0.8rem; padding: 6px 10px; height: 34px;">
+                                        <select id="shopping-item-category" class="form-control" style="width: 100px; font-size: 0.8rem; padding: 6px; height: 34px;">
+                                            <option value="Hortifrúti">Hortifrúti</option>
+                                            <option value="Frios/Proteínas">Proteínas</option>
+                                            <option value="Mercearia">Mercearia</option>
+                                            <option value="Outros">Outros</option>
+                                        </select>
+                                        <button type="submit" class="btn-primary" style="padding: 6px 12px; height: 34px; display: flex; align-items: center; justify-content: center;"><i data-lucide="plus" style="width: 14px; height: 14px;"></i></button>
+                                    </form>
+                                    <div id="esg-shopping-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
+                                        <!-- Inserido dinamicamente via JS -->
+                                    </div>
+                                </div>
+
+                                <!-- Controle de Validade / Desperdício Zero -->
+                                <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                                    <div class="panel-header space-between" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); margin: 0; align-items: center;">
+                                        <div class="title-with-icon">
+                                            <i data-lucide="calendar-clock" style="color: var(--warning);"></i>
+                                            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin: 0;">Validade de Alimentos</h4>
+                                        </div>
+                                        <button type="button" class="btn-primary btn-sm" onclick="openEsgFoodModal()" style="padding: 4px 8px; font-size: 0.7rem; display: flex; align-items: center; gap: 4px; border-radius: 4px;"><i data-lucide="plus" style="width: 12px; height: 12px;"></i> Novo</button>
+                                    </div>
+                                    <div id="esg-food-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
+                                        <!-- Inserido dinamicamente via JS -->
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Histórico de Sustentabilidade -->
                             <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015);">
                                 <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Histórico de Ações Sustentáveis</h4>
@@ -802,7 +857,43 @@
                                     </div>
                                 </div>
                             </div>
-                            
+                            <!-- Ficha de Treino & Frequência -->
+                            <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 12px; width: 100%;">
+                                <div class="panel-header space-between" style="padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); margin: 0; align-items: center;">
+                                    <div class="title-with-icon">
+                                        <i data-lucide="dumbbell" style="color: hsl(0, 80%, 55%);"></i>
+                                        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 0;">Ficha de Treino & Frequência</h4>
+                                    </div>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <!-- Descanso Timer Visual -->
+                                        <div id="workout-rest-timer" class="workout-rest-timer hidden" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; font-weight: 700; color: #ef4444; display: flex; align-items: center; gap: 6px;">
+                                            <i data-lucide="timer" style="width: 14px; height: 14px;" class="animate-spin"></i>
+                                            <span>Descanso: <b id="rest-seconds-display">60s</b></span>
+                                            <button type="button" onclick="stopWorkoutRestTimer()" style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0 0 0 4px; display: flex; align-items: center;"><i data-lucide="x" style="width: 12px; height: 12px;"></i></button>
+                                        </div>
+                                        <button type="button" class="btn-primary btn-sm" onclick="openWorkoutModal()" style="font-size: 0.72rem; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px;"><i data-lucide="plus" style="width: 12px; height: 12px;"></i> Novo Treino</button>
+                                    </div>
+                                </div>
+
+                                <!-- Seletor de Fichas (Abas de Treino) -->
+                                <div class="workout-tabs-row" id="workout-tabs-container" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
+                                    <!-- Abas dos treinos (A, B, C...) inseridas dinamicamente -->
+                                </div>
+
+                                <!-- Frequência do Treino Selecionado e dias da semana -->
+                                <div id="workout-frequency-bar" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);">
+                                    <span id="workout-recommended-day">Dia Recomendado: Segunda</span>
+                                    <div style="display: flex; gap: 4px; align-items: center;" id="workout-frequency-chips">
+                                        <!-- Histórico visual dos dias treinados na semana atual -->
+                                    </div>
+                                </div>
+
+                                <!-- Conteúdo do Treino Selecionado -->
+                                <div id="workout-active-content" style="display: flex; flex-direction: column; gap: 10px;">
+                                    <!-- Exercícios inseridos via JS -->
+                                </div>
+                            </div>
+
                             <!-- Histórico Físico Completo -->
                             <div class="glass-panel" style="padding: 16px; border-color: rgba(255,255,255,0.05); background: rgba(255,255,255,0.015);">
                                 <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Registro de Sono & Atividades Físicas</h4>
@@ -2142,6 +2233,118 @@
                     <div class="flex-end">
                         <button type="button" class="btn-secondary" onclick="closeLearnBookModal()">Cancelar</button>
                         <button type="submit" class="btn-accent">Salvar Livro</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Adicionar Alimento/Validade (ESG) -->
+    <div id="modal-esg-food" class="modal-overlay">
+        <div class="modal-content glass-card" style="max-width: 400px;">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3>Cadastrar Alimento Fresco</h3>
+                <button type="button" class="btn-close-modal" onclick="closeEsgFoodModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="esg-food-form" onsubmit="saveEsgFood(event)" style="margin: 0;">
+                <div class="form-group">
+                    <label for="esg-food-name">Nome do Alimento / Fruta</label>
+                    <input type="text" id="esg-food-name" class="form-control" placeholder="Ex: Morango, Alface, Leite" required>
+                </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label for="esg-food-qty">Quantidade</label>
+                        <input type="text" id="esg-food-qty" class="form-control" placeholder="Ex: 5 unidades, 1L" required>
+                    </div>
+                    <div>
+                        <label for="esg-food-days">Validade (dias)</label>
+                        <input type="number" id="esg-food-days" class="form-control" min="1" placeholder="Ex: 5" required>
+                    </div>
+                </div>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeEsgFoodModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Cadastrar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Adicionar Novo Treino (Body) -->
+    <div id="modal-body-workout" class="modal-overlay">
+        <div class="modal-content glass-card" style="max-width: 400px;">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3>Novo Treino / Ficha</h3>
+                <button type="button" class="btn-close-modal" onclick="closeWorkoutModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="body-workout-form" onsubmit="saveWorkout(event)" style="margin: 0;">
+                <div class="form-group">
+                    <label for="workout-letter">Letra / ID do Treino</label>
+                    <input type="text" id="workout-letter" class="form-control" placeholder="Ex: A, B, C, D" required maxlength="5">
+                </div>
+                <div class="form-group">
+                    <label for="workout-name">Nome do Treino</label>
+                    <input type="text" id="workout-name" class="form-control" placeholder="Ex: Costas e Bíceps, Membros Inferiores" required>
+                </div>
+                <div class="form-group">
+                    <label for="workout-day">Dia da Semana Recomendado</label>
+                    <select id="workout-day" class="form-control" required>
+                        <option value="Segunda">Segunda-feira</option>
+                        <option value="Terça">Terça-feira</option>
+                        <option value="Quarta">Quarta-feira</option>
+                        <option value="Quinta">Quinta-feira</option>
+                        <option value="Sexta">Sexta-feira</option>
+                        <option value="Sábado">Sábado</option>
+                        <option value="Domingo">Domingo</option>
+                    </select>
+                </div>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeWorkoutModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent">Criar Treino</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Adicionar/Editar Exercício (Body) -->
+    <div id="modal-body-exercise" class="modal-overlay">
+        <div class="modal-content glass-card" style="max-width: 400px;">
+            <div class="bottom-sheet-grabber"></div>
+            <div class="modal-header">
+                <h3 id="exercise-modal-title">Adicionar Exercício</h3>
+                <button type="button" class="btn-close-modal" onclick="closeExerciseModal()"><i data-lucide="x"></i></button>
+            </div>
+            <form id="body-exercise-form" onsubmit="saveExercise(event)" style="margin: 0;">
+                <input type="hidden" id="exercise-workout-id">
+                <input type="hidden" id="exercise-index">
+                <div class="form-group">
+                    <label for="exercise-name">Nome do Exercício</label>
+                    <input type="text" id="exercise-name" class="form-control" placeholder="Ex: Puxada Alta, Rosca Direta" required>
+                </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label for="exercise-sets">Séries</label>
+                        <input type="number" id="exercise-sets" class="form-control" min="1" placeholder="Ex: 3" required>
+                    </div>
+                    <div>
+                        <label for="exercise-reps">Repetições</label>
+                        <input type="number" id="exercise-reps" class="form-control" min="1" placeholder="Ex: 10" required>
+                    </div>
+                    <div>
+                        <label for="exercise-weight">Carga (Kg)</label>
+                        <input type="number" id="exercise-weight" class="form-control" min="0" placeholder="Ex: 15" required>
+                    </div>
+                </div>
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button type="button" id="btn-delete-exercise" class="btn-danger hidden" onclick="deleteExercise()">Excluir</button>
+                    <div class="flex-end">
+                        <button type="button" class="btn-secondary" onclick="closeExerciseModal()">Cancelar</button>
+                        <button type="submit" class="btn-accent" id="btn-save-exercise">Salvar</button>
                     </div>
                 </div>
             </form>
