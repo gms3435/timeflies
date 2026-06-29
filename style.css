@@ -2950,6 +2950,31 @@ textarea.form-control {
     padding: 24px 20px;
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar for drawer content to keep it looking clean and modern */
+.drawer-content::-webkit-scrollbar {
+    width: 6px;
+}
+.drawer-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+.drawer-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+.drawer-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+[data-theme="light"] .drawer-content::-webkit-scrollbar-thumb,
+[data-theme="mono-light"] .drawer-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+}
+[data-theme="light"] .drawer-content::-webkit-scrollbar-thumb:hover,
+[data-theme="mono-light"] .drawer-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
 }
 [data-theme="light"] .drawer-content,
 [data-theme="mono-light"] .drawer-content {
@@ -4204,6 +4229,7 @@ textarea.form-control {
     color: var(--text-muted);
     cursor: pointer;
     transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 .workout-tab-btn:hover {
     background: rgba(255, 255, 255, 0.06);
@@ -4214,6 +4240,25 @@ textarea.form-control {
     color: #fff;
     border-color: transparent;
     box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);
+}
+
+/* Custom horizontal scrollbar for workout tabs row */
+.workout-tabs-row::-webkit-scrollbar {
+    height: 4px;
+}
+.workout-tabs-row::-webkit-scrollbar-track {
+    background: transparent;
+}
+.workout-tabs-row::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+.workout-tabs-row::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+[data-theme="light"] .workout-tabs-row::-webkit-scrollbar-thumb,
+[data-theme="mono-light"] .workout-tabs-row::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .exercise-row-card {

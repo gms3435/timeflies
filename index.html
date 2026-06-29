@@ -24,7 +24,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;600;700&display=swap" rel="stylesheet">
 
     <!-- CSS do App -->
-    <link rel="stylesheet" href="style.css?v=16">
+    <link rel="stylesheet" href="style.css?v=18">
 
     <!-- Diagnóstico de Erros JS (inline, sem custo de rede) -->
     <script>
@@ -150,9 +150,6 @@
                 <button class="drawer-link" onclick="selectDrawerTab('tab-finances')">
                     <i data-lucide="wallet"></i> <span>💰 Finanças</span>
                 </button>
-                <button class="drawer-link" onclick="selectDrawerTab('tab-metrics')">
-                    <i data-lucide="pie-chart"></i> <span>Métricas & Gráficos</span>
-                </button>
                 <button class="drawer-link" onclick="selectDrawerTab('tab-settings')">
                     <i data-lucide="settings"></i> <span>Ajustes & Segurança</span>
                 </button>
@@ -202,6 +199,40 @@
                             </div>
                             <div id="home-shopping-list" class="style-scroll" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 4px;">
                                 <!-- Preenchido dinamicamente via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de Alocação de Tempo -->
+                        <div class="glass-panel metrics-panel collapsed" id="card-metric-time">
+                            <div class="panel-header" onclick="toggleMetricCard('card-metric-time')" style="cursor: pointer;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i data-lucide="pie-chart" class="text-primary"></i>
+                                    <h3 style="margin: 0; font-size: 0.95rem; font-weight: 800;">Alocação de Tempo</h3>
+                                </div>
+                                <i data-lucide="chevron-down" class="toggle-icon"></i>
+                            </div>
+                            <div class="card-body-collapsible">
+                                <div class="chart-container" onclick="expandChart('timeAllocationChart', 'Alocação de Tempo')" style="max-height: 150px; cursor: pointer;">
+                                    <canvas id="timeAllocationChart"></canvas>
+                                </div>
+                                <div id="chart-legend" class="chart-legend"></div>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de Prioridades de Tarefas -->
+                        <div class="glass-panel metrics-panel collapsed" id="card-metric-priority">
+                            <div class="panel-header" onclick="toggleMetricCard('card-metric-priority')" style="cursor: pointer;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i data-lucide="bar-chart-horizontal" class="text-success"></i>
+                                    <h3 style="margin: 0; font-size: 0.95rem; font-weight: 800;">Prioridades das Tarefas</h3>
+                                </div>
+                                <i data-lucide="chevron-down" class="toggle-icon"></i>
+                            </div>
+                            <div class="card-body-collapsible">
+                                <div class="chart-container" onclick="expandChart('taskPriorityChart', 'Prioridades das Tarefas')" style="max-height: 150px; cursor: pointer;">
+                                    <canvas id="taskPriorityChart"></canvas>
+                                </div>
+                                <div id="priority-chart-legend" class="chart-legend"></div>
                             </div>
                         </div>
                         </div>
@@ -732,13 +763,13 @@
                                 </div>
 
                                 <!-- Seletor de Fichas (Abas de Treino) -->
-                                <div class="workout-tabs-row" id="workout-tabs-container" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
+                                <div class="workout-tabs-row" id="workout-tabs-container" style="display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 4px; padding-bottom: 6px;">
                                     <!-- Abas dos treinos (A, B, C...) inseridas dinamicamente -->
                                 </div>
 
                                 <!-- Frequência do Treino Selecionado e dias da semana -->
-                                <div id="workout-frequency-bar" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);">
-                                    <span id="workout-recommended-day">Dia Recomendado: Segunda</span>
+                                <div id="workout-frequency-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);">
+                                    <span id="workout-recommended-day" style="white-space: nowrap;">Dia Recomendado: Segunda</span>
                                     <div style="display: flex; gap: 4px; align-items: center;" id="workout-frequency-chips">
                                         <!-- Histórico visual dos dias treinados na semana atual -->
                                     </div>
@@ -981,6 +1012,58 @@
                                     </table>
                                 </div>
                             </div>
+
+                            <!-- Indicadores e Histórico Financeiro -->
+                            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-top: 24px; margin-bottom: 12px;">Indicadores e Histórico Financeiro</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px;" class="finance-dash-grid">
+                                <!-- Tabela: Gastos Previstos no Cartão (Próximo Mês) -->
+                                <div class="glass-panel metrics-panel collapsed" id="card-metric-forecast">
+                                    <div class="panel-header" onclick="toggleMetricCard('card-metric-forecast')" style="cursor: pointer;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <i data-lucide="credit-card" class="text-accent"></i>
+                                            <h4 style="margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Gastos Previstos (Cartão - Próx. Mês)</h4>
+                                        </div>
+                                        <i data-lucide="chevron-down" class="toggle-icon"></i>
+                                    </div>
+                                    <div class="card-body-collapsible">
+                                        <div id="financial-card-forecast-container" class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
+                                            <div class="placeholder-msg">Carregando dados...</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tabela: Despesas Médias Mensais -->
+                                <div class="glass-panel metrics-panel collapsed" id="card-metric-averages">
+                                    <div class="panel-header" onclick="toggleMetricCard('card-metric-averages')" style="cursor: pointer;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <i data-lucide="calculator" class="text-warning"></i>
+                                            <h4 style="margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Despesas Médias Mensais</h4>
+                                        </div>
+                                        <i data-lucide="chevron-down" class="toggle-icon"></i>
+                                    </div>
+                                    <div class="card-body-collapsible">
+                                        <div id="financial-averages-container" class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
+                                            <div class="placeholder-msg">Carregando dados...</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tabela: Gastos x Receitas Totais (Histórico) -->
+                                <div class="glass-panel metrics-panel collapsed" id="card-metric-history">
+                                    <div class="panel-header" onclick="toggleMetricCard('card-metric-history')" style="cursor: pointer;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <i data-lucide="arrow-up-down" class="text-success"></i>
+                                            <h4 style="margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--text-main);">Gastos x Receitas Histórico</h4>
+                                        </div>
+                                        <i data-lucide="chevron-down" class="toggle-icon"></i>
+                                    </div>
+                                    <div class="card-body-collapsible">
+                                        <div id="financial-history-container" class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
+                                            <div class="placeholder-msg">Carregando dados...</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- SUB-ABA 2: Gastos à Vista -->
@@ -1189,98 +1272,7 @@
                 </section>
             </div>
             
-            <!-- ABA: Métricas & Gráficos -->
-            <div id="tab-metrics" class="tab-content" style="overflow-y: auto; padding-right: 4px;">
-                <section class="sidebar-column" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%;">
-                    <!-- Gráfico de Alocação de Tempo -->
-                    <div class="glass-panel metrics-panel collapsed" id="card-metric-time">
-                        <div class="panel-header" onclick="toggleMetricCard('card-metric-time')">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i data-lucide="pie-chart" class="text-primary"></i>
-                                <h2>Alocação de Tempo</h2>
-                            </div>
-                            <i data-lucide="chevron-down" class="toggle-icon"></i>
-                        </div>
-                        <div class="card-body-collapsible">
-                            <div class="chart-container" onclick="expandChart('timeAllocationChart', 'Alocação de Tempo')">
-                                <canvas id="timeAllocationChart"></canvas>
-                            </div>
-                            <div id="chart-legend" class="chart-legend"></div>
-                        </div>
-                    </div>
 
-                    <!-- Gráfico de Prioridades de Tarefas -->
-                    <div class="glass-panel metrics-panel collapsed" id="card-metric-priority">
-                        <div class="panel-header" onclick="toggleMetricCard('card-metric-priority')">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i data-lucide="bar-chart-horizontal" class="text-success"></i>
-                                <h2>Prioridades das Tarefas</h2>
-                            </div>
-                            <i data-lucide="chevron-down" class="toggle-icon"></i>
-                        </div>
-                        <div class="card-body-collapsible">
-                            <div class="chart-container" onclick="expandChart('taskPriorityChart', 'Prioridades das Tarefas')">
-                                <canvas id="taskPriorityChart"></canvas>
-                            </div>
-                            <div id="priority-chart-legend" class="chart-legend"></div>
-                        </div>
-                    </div>
-                </section>
-
-                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 24px 0 12px 0; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="wallet" class="text-accent"></i> Métricas Financeiras
-                </h3>
-
-                <section class="sidebar-column" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%;">
-                    <!-- Tabela: Gastos Previstos no Cartão (Próximo Mês) -->
-                    <div class="glass-panel metrics-panel collapsed" id="card-metric-forecast">
-                        <div class="panel-header" onclick="toggleMetricCard('card-metric-forecast')">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i data-lucide="credit-card" class="text-accent"></i>
-                                <h2>Gastos Previstos (Cartão - Próx. Mês)</h2>
-                            </div>
-                            <i data-lucide="chevron-down" class="toggle-icon"></i>
-                        </div>
-                        <div class="card-body-collapsible">
-                            <div id="financial-card-forecast-container" class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
-                                <div class="placeholder-msg">Carregando dados...</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tabela: Despesas Médias Mensais -->
-                    <div class="glass-panel metrics-panel collapsed" id="card-metric-averages">
-                        <div class="panel-header" onclick="toggleMetricCard('card-metric-averages')">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i data-lucide="calculator" class="text-warning"></i>
-                                <h2>Despesas Médias Mensais</h2>
-                            </div>
-                            <i data-lucide="chevron-down" class="toggle-icon"></i>
-                        </div>
-                        <div class="card-body-collapsible">
-                            <div id="financial-averages-container" class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
-                                <div class="placeholder-msg">Carregando dados...</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tabela: Gastos Totais x Receitas Totais (Histórico) -->
-                    <div class="glass-panel metrics-panel collapsed" id="card-metric-history">
-                        <div class="panel-header" onclick="toggleMetricCard('card-metric-history')">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i data-lucide="arrow-up-down" class="text-success"></i>
-                                <h2>Gastos x Receitas Histórico</h2>
-                            </div>
-                            <i data-lucide="chevron-down" class="toggle-icon"></i>
-                        </div>
-                        <div class="card-body-collapsible">
-                            <div id="financial-history-container" class="finance-table-wrapper" style="overflow-x: auto; width: 100%;">
-                                <div class="placeholder-msg">Carregando dados...</div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
 
             <!-- ABA: Ajustes & Segurança -->
             <div id="tab-settings" class="tab-content" style="overflow-y: auto; padding-right: 4px; padding-bottom: 20px;">
@@ -2354,7 +2346,7 @@
     <!-- Chart.js: versão pinada + bundle minificado -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
     <!-- App -->
-    <script src="app.js?v=20" defer></script>
+    <script src="app.js?v=23" defer></script>
     <!-- Service Worker: cache offline -->
     <script>
         if ('serviceWorker' in navigator) {

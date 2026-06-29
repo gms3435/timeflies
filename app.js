@@ -2974,8 +2974,8 @@ window.switchMainTab = function(tabId) {
     // Recalcula exibição do mini-timer do cabeçalho
     updateTimerDisplay();
 
-    // Special trigger: re-render charts when switching to metrics tab
-    if (tabId === 'tab-metrics') {
+    // Special trigger: re-render charts when switching to home tab
+    if (tabId === 'tab-home') {
         renderCharts();
     }
     if (tabId === 'tab-timeflies') {
@@ -4374,6 +4374,7 @@ function adjustFinanceMonth(dir) {
     state.currentFinanceMonth = `${yyyy}-${mm}`;
     
     renderFinances();
+    renderFinancialMetrics();
 }
 
 // Formatar rótulo do mês
@@ -4725,6 +4726,29 @@ function toggleFixedExpenseMethodFields() {
     }
 }
 
+function getMonthsToProcess(item, targetMonthStr, scope) {
+    const months = new Set(getAllFinanceMonths(item));
+    const [year, month] = targetMonthStr.split('-').map(Number);
+    
+    if (scope === 'from-current-forward') {
+        // Trava os 12 meses anteriores para não herdarem o novo valor base
+        for (let i = 1; i <= 12; i++) {
+            const d = new Date(year, month - 1 - i, 1);
+            const mStr = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+            months.add(mStr);
+        }
+    } else if (scope === 'from-current-backward') {
+        // Trava os 12 meses futuros para não herdarem o novo valor base
+        for (let i = 1; i <= 12; i++) {
+            const d = new Date(year, month - 1 + i, 1);
+            const mStr = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+            months.add(mStr);
+        }
+    }
+    
+    return Array.from(months).sort();
+}
+
 function saveFixedExpense(event) {
     event.preventDefault();
     
@@ -4771,7 +4795,7 @@ function saveFixedExpense(event) {
             if (scope === 'only-current') {
                 updatedItem.monthlyAmounts[targetMonth] = amount;
             } else if (scope === 'from-current-forward') {
-                const allMonths = getAllFinanceMonths(item);
+                const allMonths = getMonthsToProcess(item, targetMonth, scope);
                 const oldBaseAmount = item.amount;
                 
                 allMonths.forEach(m => {
@@ -4793,7 +4817,7 @@ function saveFixedExpense(event) {
                 
                 updatedItem.amount = amount;
             } else if (scope === 'from-current-backward') {
-                const allMonths = getAllFinanceMonths(item);
+                const allMonths = getMonthsToProcess(item, targetMonth, scope);
                 const oldBaseAmount = item.amount;
                 
                 allMonths.forEach(m => {
@@ -7504,19 +7528,18 @@ function renderBodyWorkouts() {
         
         card.innerHTML = `
             <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
-                <input type="checkbox" ${ex.completed ? 'checked' : ''} onchange="toggleExerciseCompletion('${activeWorkout.id}', ${idx})" style="cursor: pointer; width: 16px; height: 16px; accent-color: hsl(0, 80%, 55%);">
+                <input type="checkbox" ${ex.completed ? 'checked' : ''} onchange="toggleExerciseCompletion('${activeWorkout.id}', ${idx})" style="cursor: pointer; width: 16px; height: 16px; accent-color: hsl(0, 80%, 55%); flex-shrink: 0;">
                 <div style="display: flex; flex-direction: column; min-width: 0;">
                     <span class="exercise-info-name" style="font-size: 0.82rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${ex.name}</span>
-                    <span style="font-size: 0.7rem; color: var(--text-muted);">${ex.sets} séries de ${ex.reps} repetições</span>
+                    <span style="font-size: 0.68rem; color: var(--text-muted);">${ex.sets}x${ex.reps} reps</span>
                 </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--text-muted);">
-                    <input type="number" value="${ex.weight}" onchange="updateExerciseWeight('${activeWorkout.id}', ${idx}, this.value)" style="width: 44px; height: 26px; font-size: 0.75rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); color: #fff; padding: 2px 4px; border-radius: 4px; text-align: center;" min="0">
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 3px; font-size: 0.7rem; color: var(--text-muted);">
+                    <input type="number" value="${ex.weight}" onchange="updateExerciseWeight('${activeWorkout.id}', ${idx}, this.value)" style="width: 38px; height: 24px; font-size: 0.72rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); color: #fff; padding: 2px; border-radius: 4px; text-align: center;" min="0">
                     <span>Kg</span>
                 </div>
-                <button type="button" onclick="startWorkoutRestTimer()" class="btn-icon" title="Iniciar Descanso (60s)" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 5px; border-radius: 4px; color: var(--text-muted);"><i data-lucide="timer" style="width: 13px; height: 13px;"></i></button>
-                <button type="button" class="btn-icon" onclick="openExerciseModal('${activeWorkout.id}', ${idx})" style="background: transparent; border: none; cursor: pointer; padding: 2px; color: var(--text-muted);"><i data-lucide="edit-3" style="width: 13px; height: 13px;"></i></button>
+                <button type="button" class="btn-icon" onclick="openExerciseModal('${activeWorkout.id}', ${idx})" style="background: transparent; border: none; cursor: pointer; padding: 2px; color: var(--text-muted); display: flex; align-items: center; justify-content: center;"><i data-lucide="edit-3" style="width: 13px; height: 13px;"></i></button>
             </div>
         `;
         contentContainer.appendChild(card);
@@ -7524,23 +7547,23 @@ function renderBodyWorkouts() {
     
     // Barra de Ação do Treino
     const actionsRow = document.createElement('div');
-    actionsRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-top: 6px; gap: 8px;';
+    actionsRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-top: 6px; gap: 8px; flex-wrap: wrap;';
     
     // Check se todos concluídos
     const allDone = exercises.every(e => e.completed);
     const todayStr = new Date().toISOString().substring(0, 10);
     const alreadyCompletedToday = activeWorkout.completedDays && activeWorkout.completedDays.includes(todayStr);
     
-    let completeBtnText = alreadyCompletedToday ? 'Concluído Hoje! ✓' : 'Concluir Treino';
+    let completeBtnText = alreadyCompletedToday ? 'Concluído ✓' : 'Concluir Treino';
     let completeBtnStyle = alreadyCompletedToday 
         ? 'background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; font-weight: 700;' 
         : 'background: hsl(0, 80%, 55%); border: 1px solid hsl(0, 80%, 55%); color: #fff; font-weight: 700;';
         
     actionsRow.innerHTML = `
-        <button type="button" class="btn-secondary" onclick="openExerciseModal('${activeWorkout.id}')" style="font-size: 0.72rem; padding: 6px 12px; display: flex; align-items: center; gap: 4px; border-radius: 6px;"><i data-lucide="plus" style="width: 13px; height: 13px;"></i> Add Exercício</button>
+        <button type="button" class="btn-secondary" onclick="openExerciseModal('${activeWorkout.id}')" style="font-size: 0.68rem; padding: 5px 8px; display: flex; align-items: center; gap: 4px; border-radius: 6px;"><i data-lucide="plus" style="width: 12px; height: 12px;"></i> Add Exercício</button>
         <div style="display: flex; gap: 6px;">
-            <button type="button" class="btn-danger btn-sm" onclick="deleteWorkout('${activeWorkout.id}')" style="font-size: 0.72rem; padding: 6px 10px; border-radius: 6px; background: transparent; border: 1px solid var(--danger); color: var(--danger);">Excluir Treino</button>
-            <button type="button" class="btn-primary" onclick="completeWorkout('${activeWorkout.id}')" style="font-size: 0.75rem; padding: 6px 14px; border-radius: 6px; ${completeBtnStyle}" ${alreadyCompletedToday ? 'disabled' : ''}>${completeBtnText}</button>
+            <button type="button" class="btn-danger btn-sm" onclick="deleteWorkout('${activeWorkout.id}')" style="font-size: 0.68rem; padding: 5px 8px; border-radius: 6px; background: transparent; border: 1px solid var(--danger); color: var(--danger);">Excluir Treino</button>
+            <button type="button" class="btn-primary" onclick="completeWorkout('${activeWorkout.id}')" style="font-size: 0.68rem; padding: 5px 10px; border-radius: 6px; ${completeBtnStyle}" ${alreadyCompletedToday ? 'disabled' : ''}>${completeBtnText}</button>
         </div>
     `;
     contentContainer.appendChild(actionsRow);
